@@ -1,0 +1,275 @@
+openapi: 3.1.0
+info:
+  title: Spracherkennung API
+  version: 1.0.0
+  description: Веб-сервис распознавания аудиофайлов
+servers:
+  - url: http://localhost:1807
+paths:
+  /api/auth/register:
+    post:
+      tags: [Authentication]
+      summary: Регистрация нового пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Успешная регистрация
+        '409':
+          description: Электронная почта/логин уже существует
+
+  /api/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Аутентификация
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Токен получен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+        '401':
+          description: Неверные учетные данные
+
+  /api/audio/upload:
+    post:
+      tags: [Audio]
+      summary: Загрузка аудиофайла
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '202':
+          description: Принято в обработку
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranscriptionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/transcriptions/history:
+    get:
+      tags: [Transcriptions]
+      summary: История транскрипций пользователя
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список транскрипций
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TranscriptionHistoryItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/transcriptions/{id}/status:
+    get:
+      tags: [Transcriptions]
+      summary: Статус обработки транскрипции
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: Текущее состояние
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranscriptionStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/transcriptions/{id}/blocks:
+    get:
+      tags: [Transcriptions]
+      summary: Получение смысловых блоков
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: Текст успешно получен
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SemanticBlock'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/transcriptions/{id}/statistics:
+    get:
+      tags: [Transcriptions]
+      summary: Статистика транскрипции
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: Данные статистики
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Statistics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/transcriptions/{id}/export:
+    get:
+      tags: [Transcriptions]
+      summary: Экспорт конспекта в файл
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [pdf, markdown]
+      responses:
+        '200':
+          description: Файл конспекта
+          content:
+            application/octet-stream: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/transcriptions/{id}/logs:
+    get:
+      tags: [Transcriptions]
+      summary: Лог внешних вызовов для транскрипции
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PathId'
+      responses:
+        '200':
+          description: История вызовов API
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExternalCallLog'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    PathId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+  responses:
+    Unauthorized:
+      description: Ошибка авторизации (отсутствует или неверный токен)
+    NotFound:
+      description: Ресурс с указанным ID не найден
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [login, email, password]
+      properties:
+        login: { type: string }
+        email: { type: string }
+        password: { type: string }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string }
+        password: { type: string }
+
+    TranscriptionResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        status: { type: string, enum: [NEW, RUNNING, DONE, ERROR, CANCELED] }
+
+    TranscriptionStatus:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        status: { type: string, enum: [NEW, RUNNING, DONE, ERROR, CANCELED] }
+        updated_at: { type: string, format: date-time }
+
+    TranscriptionHistoryItem:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        audio_file_name: { type: string }
+        status: { type: string, enum: [NEW, RUNNING, DONE, ERROR, CANCELED] }
+        created_at: { type: string, format: date-time }
+        duration_seconds: { type: number, format: double }
+
+    SemanticBlock:
+      type: object
+      properties:
+        order_index: { type: integer }
+        text_content: { type: string }
+
+    Statistics:
+      type: object
+      properties:
+        duration_seconds: { type: number, format: double }
+        character_count: { type: integer }
+        sentence_count: { type: integer }
+
+    ExternalCallLog:
+      type: object
+      properties:
+        operation_type: { type: string }
+        http_method: { type: string }
+        http_status: { type: integer }
+        message: { type: string }
+        created_at: { type: string, format: date-time }
