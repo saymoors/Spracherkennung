@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: spracherkennung
+  datasource:
+    url: jdbc:postgresql://localhost:5432/spracherkennung
+    username: postgres
+    password: postgres
+
+server:
+  port: 1807
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /api-docs
+
+salutespeech:
+  client-id: ${SALUTESPEECH_CLIENT_ID}
+  client-secret: ${SALUTESPEECH_CLIENT_SECRET}
+  auth-url: https://ngw.devices.sberbank.ru:9443/api/v2/oauth
+  api-url: https://smartspeech.sber.ru/rest/v1
+  scope: SALUTE_SPEECH_PERS
+
+spracherkennung:
+  upload-dir: uploads
