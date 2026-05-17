@@ -15,7 +15,7 @@ CREATE TABLE audio_files
     system_path  VARCHAR(500) NOT NULL,
     format       VARCHAR(50)  NOT NULL,
     size_bytes   BIGINT       NOT NULL,
-    sber_file_id UUID,
+    sber_request_file_id UUID,
     upload_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -24,7 +24,7 @@ CREATE TABLE transcriptions
     id                    SERIAL PRIMARY KEY,
     audio_file_id         INTEGER     NOT NULL REFERENCES audio_files (id) ON DELETE CASCADE,
     sber_task_id          VARCHAR(100),
-    sber_response_file_id VARCHAR(100),
+    sber_response_file_id UUID,
     status                VARCHAR(20) NOT NULL DEFAULT 'NEW' CHECK (status IN ('NEW', 'RUNNING', 'DONE', 'CANCELED', 'ERROR')),
     created_at            TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at            TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
