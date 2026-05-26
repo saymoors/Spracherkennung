@@ -2,14 +2,22 @@ openapi: 3.1.0
 info:
   title: Spracherkennung API
   version: 1.0.0
-  description: Веб-сервис распознавания аудиофайлов
 servers:
   - url: http://localhost:1807
+
+tags:
+  - name: Auth
+  - name: Transcriptions
+
+security:
+  - bearerAuth: []
+
 paths:
   /api/auth/register:
     post:
-      tags: [Authentication]
-      summary: Регистрация нового пользователя
+      tags: [Auth]
+      summary: Регистрация
+      security: []
       requestBody:
         required: true
         content:
@@ -18,14 +26,15 @@ paths:
               $ref: '#/components/schemas/RegisterRequest'
       responses:
         '201':
-          description: Успешная регистрация
+          description: OK
         '409':
-          description: Электронная почта/логин уже существует
+          description: Логин или email уже занят
 
   /api/auth/login:
     post:
-      tags: [Authentication]
-      summary: Аутентификация
+      tags: [Auth]
+      summary: Вход
+      security: []
       requestBody:
         required: true
         content:
@@ -34,23 +43,20 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
-          description: Токен получен
+          description: OK
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  token: { type: string }
+                $ref: '#/components/schemas/LoginResponse'
         '401':
-          description: Неверные учетные данные
+          description: Неверный email или пароль
 
-  /api/audio/upload:
+  /api/transcriptions/upload:
     post:
-      tags: [Audio]
-      summary: Загрузка аудиофайла
-      security:
-        - bearerAuth: []
+      tags: [Transcriptions]
+      summary: Загрузить аудио
       requestBody:
+        required: true
         content:
           multipart/form-data:
             schema:
@@ -59,217 +65,161 @@ paths:
                 file:
                   type: string
                   format: binary
+                  description: Поддерживается только MP3.
       responses:
         '202':
-          description: Принято в обработку
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TranscriptionResponse'
+          description: Принято
+        '400':
+          description: Файл не подходит для загрузки
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: Нет токена
 
-  /api/transcriptions/history:
+  /api/transcriptions:
     get:
       tags: [Transcriptions]
-      summary: История транскрипций пользователя
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Список транскрипций
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TranscriptionHistoryItem'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /api/transcriptions/{id}/status:
-    get:
-      tags: [Transcriptions]
-      summary: Статус обработки транскрипции
-      security:
-        - bearerAuth: []
+      summary: История
       parameters:
-        - $ref: '#/components/parameters/PathId'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
       responses:
         '200':
-          description: Текущее состояние
+          description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TranscriptionStatus'
+                $ref: '#/components/schemas/TranscriptionHistoryResponse'
+        '400':
+          description: Некорректные параметры страницы
         '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+          description: Нет токена
 
-  /api/transcriptions/{id}/blocks:
+  /api/transcriptions/{id}:
     get:
       tags: [Transcriptions]
-      summary: Получение смысловых блоков
-      security:
-        - bearerAuth: []
+      summary: Детали и текст
       parameters:
-        - $ref: '#/components/parameters/PathId'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       responses:
         '200':
-          description: Текст успешно получен
+          description: OK
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/SemanticBlock'
+                $ref: '#/components/schemas/TranscriptionDetails'
         '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/transcriptions/{id}/statistics:
-    get:
-      tags: [Transcriptions]
-      summary: Статистика транскрипции
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/PathId'
-      responses:
-        '200':
-          description: Данные статистики
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Statistics'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+          description: Нет токена
 
   /api/transcriptions/{id}/export:
     get:
       tags: [Transcriptions]
-      summary: Экспорт конспекта в файл
-      security:
-        - bearerAuth: []
+      summary: Скачать конспект
       parameters:
-        - $ref: '#/components/parameters/PathId'
-        - name: format
-          in: query
+        - name: id
+          in: path
           required: true
           schema:
-            type: string
-            enum: [pdf, markdown]
+            type: integer
       responses:
         '200':
-          description: Файл конспекта
+          description: Файл
           content:
-            application/octet-stream: {}
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/transcriptions/{id}/logs:
-    get:
-      tags: [Transcriptions]
-      summary: Лог внешних вызовов для транскрипции
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/PathId'
-      responses:
-        '200':
-          description: История вызовов API
-          content:
-            application/json:
+            application/pdf:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ExternalCallLog'
+                type: string
+                format: binary
         '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+          description: Нет токена
 
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
-  parameters:
-    PathId:
-      name: id
-      in: path
-      required: true
-      schema:
-        type: integer
-        format: int64
-  responses:
-    Unauthorized:
-      description: Ошибка авторизации (отсутствует или неверный токен)
-    NotFound:
-      description: Ресурс с указанным ID не найден
+
   schemas:
     RegisterRequest:
       type: object
       required: [login, email, password]
       properties:
-        login: { type: string }
-        email: { type: string }
-        password: { type: string }
+        login: { type: string, example: "ivan" }
+        email: { type: string, example: "ivan@mail.ru" }
+        password: { type: string, example: "123456" }
 
     LoginRequest:
       type: object
-      required: [email, password]
+      required: [login, password]
       properties:
-        email: { type: string }
-        password: { type: string }
+        login: { type: string, example: "ivan" }
+        password: { type: string, example: "123456" }
 
-    TranscriptionResponse:
+    LoginResponse:
       type: object
       properties:
-        id: { type: integer, format: int64 }
-        status: { type: string, enum: [NEW, RUNNING, DONE, ERROR, CANCELED] }
+        token: { type: string, example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
 
-    TranscriptionStatus:
+    TranscriptionHistoryResponse:
       type: object
       properties:
-        id: { type: integer, format: int64 }
-        status: { type: string, enum: [NEW, RUNNING, DONE, ERROR, CANCELED] }
-        updated_at: { type: string, format: date-time }
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/TranscriptionListItem'
+        page: { type: integer, example: 0 }
+        size: { type: integer, example: 20 }
+        totalElements: { type: integer, example: 42 }
+        totalPages: { type: integer, example: 3 }
 
-    TranscriptionHistoryItem:
+    TranscriptionListItem:
       type: object
       properties:
-        id: { type: integer, format: int64 }
-        audio_file_name: { type: string }
-        status: { type: string, enum: [NEW, RUNNING, DONE, ERROR, CANCELED] }
-        created_at: { type: string, format: date-time }
-        duration_seconds: { type: number, format: double }
+        id: { type: integer, example: 42 }
+        fileName: { type: string, example: "lecture.mp3" }
+        format: { type: string, example: "MP3" }
+        language: { type: string, example: "ru-RU" }
+        uploadedAt: { type: string, format: date-time, example: "2025-01-15T14:30:00Z" }
+        status: { type: string, example: "DONE" }
+        sizeBytes: { type: integer, format: int64, example: 15728640 }
+
+    TranscriptionDetails:
+      type: object
+      properties:
+        errorMessage:
+          type: string
+          nullable: true
+          example: "Превышен лимит запросов к сервису распознавания. Попробуйте позже."
+        durationSeconds:
+          type: number
+          nullable: true
+          example: 1876.5
+        characterCount:
+          type: integer
+          description: Количество символов распознанного текста, включая пробелы и знаки препинания.
+          nullable: true
+          example: 12500
+        sentenceCount:
+          type: integer
+          nullable: true
+          example: 342
+        semanticBlocks:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/SemanticBlock'
 
     SemanticBlock:
       type: object
       properties:
-        order_index: { type: integer }
-        text_content: { type: string }
-
-    Statistics:
-      type: object
-      properties:
-        duration_seconds: { type: number, format: double }
-        character_count: { type: integer }
-        sentence_count: { type: integer }
-
-    ExternalCallLog:
-      type: object
-      properties:
-        operation_type: { type: string }
-        http_method: { type: string }
-        http_status: { type: integer }
-        message: { type: string }
-        created_at: { type: string, format: date-time }
+        orderIndex: { type: integer, example: 0 }
+        textContent: { type: string, example: "Сегодня мы поговорим об..." }
