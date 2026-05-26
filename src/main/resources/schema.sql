@@ -4,31 +4,32 @@ CREATE TABLE users
     login         VARCHAR(255) NOT NULL UNIQUE,
     email         VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at    TIMESTAMP    NOT NULL
 );
 
 CREATE TABLE audio_files
 (
-    id           SERIAL PRIMARY KEY,
-    user_id      INTEGER      NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    name         VARCHAR(255) NOT NULL,
-    system_path  VARCHAR(500) NOT NULL,
-    format       VARCHAR(50)  NOT NULL,
-    size_bytes   BIGINT       NOT NULL,
+    id                   SERIAL PRIMARY KEY,
+    user_id              INTEGER      NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    name                 VARCHAR(255) NOT NULL,
+    system_path          VARCHAR(255) NOT NULL,
+    format               VARCHAR(10)  NOT NULL,
+    size_bytes           BIGINT       NOT NULL,
     sber_request_file_id UUID,
-    upload_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+    upload_at            TIMESTAMP    NOT NULL
 );
 
 CREATE TABLE transcriptions
 (
     id                    SERIAL PRIMARY KEY,
     audio_file_id         INTEGER     NOT NULL REFERENCES audio_files (id) ON DELETE CASCADE,
-    sber_task_id          VARCHAR(100),
+    language              VARCHAR(10) NOT NULL,
+    sber_task_id          VARCHAR(255),
     sber_response_file_id UUID,
-    status                VARCHAR(20) NOT NULL DEFAULT 'NEW' CHECK (status IN ('NEW', 'RUNNING', 'DONE', 'CANCELED', 'ERROR')),
-    created_at            TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at            TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    duration_seconds      NUMERIC(10, 3),
+    status                VARCHAR(10) NOT NULL,
+    created_at            TIMESTAMP   NOT NULL,
+    updated_at            TIMESTAMP   NOT NULL,
+    duration_seconds      NUMERIC(10, 2),
     character_count       INTEGER,
     sentence_count        INTEGER
 );
@@ -37,11 +38,11 @@ CREATE TABLE external_call_logs
 (
     id               SERIAL PRIMARY KEY,
     transcription_id INTEGER     NOT NULL REFERENCES transcriptions (id) ON DELETE CASCADE,
-    operation_type   VARCHAR(50) NOT NULL,
+    operation_type   VARCHAR(20) NOT NULL,
     http_method      VARCHAR(10) NOT NULL,
     http_status      INTEGER,
     message          TEXT,
-    created_at       TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at       TIMESTAMP   NOT NULL
 );
 
 CREATE TABLE semantic_blocks
@@ -49,13 +50,10 @@ CREATE TABLE semantic_blocks
     id               SERIAL PRIMARY KEY,
     transcription_id INTEGER NOT NULL REFERENCES transcriptions (id) ON DELETE CASCADE,
     order_index      INTEGER NOT NULL,
-    text_content     TEXT    NOT NULL,
-    UNIQUE (transcription_id, order_index)
+    text_content     TEXT    NOT NULL
 );
 
-CREATE INDEX idx_user_login ON users (login);
-CREATE INDEX idx_user_email ON users (email);
-CREATE INDEX idx_audio_file_user_id ON audio_files (user_id);
+CREATE INDEX idx_audio_file_user_upload_at ON audio_files (user_id, upload_at DESC);
 CREATE INDEX idx_transcription_audio_file_id ON transcriptions (audio_file_id);
 CREATE INDEX idx_transcription_status ON transcriptions (status);
 CREATE INDEX idx_external_call_log_transcription_id ON external_call_logs (transcription_id);
