@@ -14,6 +14,7 @@ CREATE TABLE audio_files
     name                 VARCHAR(255) NOT NULL,
     system_path          VARCHAR(255) NOT NULL,
     format               VARCHAR(10)  NOT NULL,
+    file_hash            VARCHAR(100) NOT NULL,
     size_bytes           BIGINT       NOT NULL,
     sber_request_file_id UUID,
     upload_at            TIMESTAMP    NOT NULL
@@ -54,6 +55,7 @@ CREATE TABLE semantic_blocks
 );
 
 CREATE INDEX idx_audio_file_user_upload_at ON audio_files (user_id, upload_at DESC);
+CREATE INDEX idx_audio_file_user_hash ON audio_files (user_id, file_hash);
 CREATE INDEX idx_transcription_audio_file_id ON transcriptions (audio_file_id);
 CREATE INDEX idx_transcription_status ON transcriptions (status);
 CREATE INDEX idx_external_call_log_transcription_id ON external_call_logs (transcription_id);
