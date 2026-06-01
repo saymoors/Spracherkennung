@@ -13,6 +13,10 @@ public class ExternalCallLog {
     @Column(name = "transcription_id", nullable = false)
     private Integer transcriptionId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "transcription_id", insertable = false, updatable = false)
+    private Transcription transcription;
+
     @Column(name = "operation_type", nullable = false)
     private String operationType;
 
@@ -42,6 +46,14 @@ public class ExternalCallLog {
 
     public void setTranscriptionId(Integer transcriptionId) {
         this.transcriptionId = transcriptionId;
+    }
+
+    public Transcription getTranscription() {
+        return transcription;
+    }
+
+    public void setTranscription(Transcription transcription) {
+        this.transcription = transcription;
     }
 
     public String getOperationType() {

@@ -14,6 +14,10 @@ public class AudioFile {
     @Column(name = "user_id", nullable = false)
     private Integer userId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    private User user;
+
     @Column(nullable = false)
     private String name;
 
@@ -32,7 +36,7 @@ public class AudioFile {
     @Column(name = "sber_request_file_id")
     private UUID sberRequestFileId;
 
-    @Column(name = "upload_at", nullable = false, updatable = false)
+    @Column(name = "upload_at", nullable = false)
     private LocalDateTime uploadAt = LocalDateTime.now();
 
     public Integer getId() {
@@ -49,6 +53,14 @@ public class AudioFile {
 
     public void setUserId(Integer userId) {
         this.userId = userId;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public String getName() {

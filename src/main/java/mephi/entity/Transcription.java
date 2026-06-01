@@ -15,6 +15,10 @@ public class Transcription {
     @Column(name = "audio_file_id", nullable = false)
     private Integer audioFileId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "audio_file_id", insertable = false, updatable = false)
+    private AudioFile audioFile;
+
     @Column(nullable = false)
     private String language;
 
@@ -56,6 +60,14 @@ public class Transcription {
 
     public void setAudioFileId(Integer audioFileId) {
         this.audioFileId = audioFileId;
+    }
+
+    public AudioFile getAudioFile() {
+        return audioFile;
+    }
+
+    public void setAudioFile(AudioFile audioFile) {
+        this.audioFile = audioFile;
     }
 
     public String getLanguage() {
