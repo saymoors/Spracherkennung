@@ -54,7 +54,7 @@ paths:
   /api/transcriptions/upload:
     post:
       tags: [Transcriptions]
-      summary: Загрузить аудио
+      summary: Распознать аудио
       requestBody:
         required: true
         content:
@@ -71,6 +71,30 @@ paths:
           description: Принято
         '400':
           description: Файл не подходит для загрузки
+        '401':
+          description: Нет токена
+
+  /api/transcriptions/recognize-again:
+    post:
+      tags: [Transcriptions]
+      summary: Распознать существующий файл заново
+      description: Создает новую транскрипцию и запускает новую задачу распознавания только если файл с таким хэшем уже есть у пользователя.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Поддерживается только MP3.
+      responses:
+        '202':
+          description: Повторное распознавание начато
+        '400':
+          description: Файл еще не существует в системе или не подходит для распознавания
         '401':
           description: Нет токена
 
