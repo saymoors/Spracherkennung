@@ -20,6 +20,9 @@ public class AudioFile {
     @Column(nullable = false)
     private String format;
 
+    @Column(name = "file_hash", nullable = false)
+    private String fileHash;
+
     @Column(name = "system_path", nullable = false)
     private String systemPath;
 
@@ -62,6 +65,14 @@ public class AudioFile {
 
     public void setFormat(String format) {
         this.format = format;
+    }
+
+    public String getFileHash() {
+        return fileHash;
+    }
+
+    public void setFileHash(String fileHash) {
+        this.fileHash = fileHash;
     }
 
     public String getSystemPath() {
