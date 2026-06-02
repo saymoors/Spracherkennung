@@ -17,7 +17,7 @@ CREATE TABLE audio_files
     file_hash            VARCHAR(100) NOT NULL,
     size_bytes           BIGINT       NOT NULL,
     sber_request_file_id UUID,
-    upload_at            TIMESTAMP    NOT NULL
+    upload_at            TIMESTAMP
 );
 
 CREATE TABLE transcriptions

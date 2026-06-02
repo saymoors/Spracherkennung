@@ -36,8 +36,8 @@ public class AudioFile {
     @Column(name = "sber_request_file_id")
     private UUID sberRequestFileId;
 
-    @Column(name = "upload_at", nullable = false)
-    private LocalDateTime uploadAt = LocalDateTime.now();
+    @Column(name = "upload_at")
+    private LocalDateTime uploadAt;
 
     public Integer getId() {
         return id;
