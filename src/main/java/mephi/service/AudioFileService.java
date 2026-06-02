@@ -19,7 +19,7 @@ import java.util.UUID;
 public class AudioFileService {
     private static final String SUPPORTED_AUDIOFORMATS = "MP3";
     private static final long SBER_FILE_REQUEST_ID_LIFETIME_HOURS = 72;
-    private static final long MAX_FILE_SIZE_BYTES = 200L * 1024 * 1024;
+    private static final long MAX_FILE_SIZE_BYTES = 250L * 1024 * 1024;
 
     @Value("${spracherkennung.upload-dir}")
     private String uploadDir;
