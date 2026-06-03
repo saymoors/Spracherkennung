@@ -17,8 +17,8 @@ import java.util.UUID;
 
 @Service
 public class AudioFileService {
-    private static final String SUPPORTED_AUDIOFORMATS = "MP3";
-    private static final long SBER_FILE_REQUEST_ID_LIFETIME_HOURS = 72;
+    private static final String SUPPORTED_AUDIO_FORMAT = "MP3";
+    private static final long SBER_REQUEST_FILE_ID_LIFETIME_HOURS = 72;
     private static final long MAX_FILE_SIZE_BYTES = 250L * 1024 * 1024;
 
     @Value("${spracherkennung.upload-dir}")
@@ -32,9 +32,9 @@ public class AudioFileService {
 
     public AudioFile getFileForRecognition(Integer userId, MultipartFile file, boolean isAnewRecognition) throws Exception {
         validateFile(file);
-        String originalFilename = getOriginalFilename(file);
-        String audioFormat = getAudioformat(file);
-        String fileHash = getFilehash(file);
+        String originalFilename = getOriginalFileName(file);
+        String audioFormat = getAudioFormat(file);
+        String fileHash = getFileHash(file);
 
         List<AudioFile> sameHashAudioFiles = audioFileRepository.findByUserIdAndFileHashOrderByUploadAtDesc(userId, fileHash);
 
@@ -70,7 +70,7 @@ public class AudioFileService {
             throw new Exception("Файл не выбран");
         }
 
-        String originalFilename = getOriginalFilename(file);
+        String originalFilename = getOriginalFileName(file);
         if (originalFilename == null || originalFilename.isBlank()) {
             throw new Exception("У файла отсутствует имя");
         }
@@ -78,7 +78,7 @@ public class AudioFileService {
             throw new Exception("У файла отсутствует расширение");
         }
 
-        if (!SUPPORTED_AUDIOFORMATS.equals(getAudioformat(file))) {
+        if (!SUPPORTED_AUDIO_FORMAT.equals(getAudioFormat(file))) {
             throw new Exception("Неподдерживаемый формат файла");
         }
 
@@ -87,19 +87,28 @@ public class AudioFileService {
         }
     }
 
-    private String getOriginalFilename(MultipartFile file) {
+    private String getOriginalFileName(MultipartFile file) {
         return file.getOriginalFilename();
     }
 
-    private String getAudioformat(MultipartFile file) {
+    private String getAudioFormat(MultipartFile file) {
         String originalFileName = file.getOriginalFilename();
         return originalFileName.substring(originalFileName.lastIndexOf(".") + 1).toUpperCase();
     }
 
-    private String getFilehash(MultipartFile file) throws Exception {
+    private String getFileHash(MultipartFile file) throws Exception {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(digest.digest(file.getBytes()));
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+
+            try (var inputStream = file.getInputStream()) {
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    digest.update(buffer, 0, bytesRead);
+                }
+            }
+
+            return HexFormat.of().formatHex(digest.digest());
         } catch (Exception exception) {
             throw new Exception("Ошибка расчета хэша файла: " + exception.getMessage());
         }
@@ -115,7 +124,7 @@ public class AudioFileService {
 
     private String saveFile(MultipartFile file) throws Exception {
         try {
-            String originalFilename = getOriginalFilename(file);
+            String originalFilename = getOriginalFileName(file);
 
             Path uploadPath = Paths.get(uploadDir);
             Files.createDirectories(uploadPath);
@@ -162,6 +171,6 @@ public class AudioFileService {
     private boolean isSberRequestFileIdAlive(AudioFile audioFile) {
         return audioFile.getSberRequestFileId() != null
                 && audioFile.getUploadAt() != null
-                && audioFile.getUploadAt().isAfter(LocalDateTime.now().minusHours(SBER_FILE_REQUEST_ID_LIFETIME_HOURS));
+                && audioFile.getUploadAt().isAfter(LocalDateTime.now().minusHours(SBER_REQUEST_FILE_ID_LIFETIME_HOURS));
     }
 }
