@@ -416,4 +416,45 @@ public class SaluteSpeechService {
             System.err.println("Не удалось сохранить лог: " + exception.getMessage());
         }
     }
+
+    @Transactional
+    public void pollSberTask(Integer transcriptionId) {
+        Transcription transcription = transcriptionRepository.findById(transcriptionId).orElse(null);
+        if (transcription == null || !"RUNNING".equals(transcription.getStatus())) {
+            return;
+        }
+
+        try {
+            String token = getAccessToken();
+
+            String url = apiUrl + "/task:get?id=" + transcription.getSberTaskId();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + token);
+            headers.set("X-Request-ID", UUID.randomUUID().toString());
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+            JsonNode json = objectMapper.readTree(response.getBody());
+            String status = json.get("result").get("status").asText();
+
+            switch (status) {
+                case "DONE" -> {
+                    UUID sberResponseFileId = UUID.fromString(json.get("result").get("response_file_id").asText());
+                    LocalDateTime now = LocalDateTime.now();
+                    transcription.setSberResponseFileId(sberResponseFileId);
+                    transcription.setSberResponseFileReceivedAt(now);
+                    transcription.setUpdatedAt(now);
+                    transcriptionRepository.save(transcription);
+                    downloadResult(transcriptionId, sberResponseFileId, token);
+                }
+                case "ERROR" -> updateError(transcriptionId);
+                case "CANCELED" -> updateCanceled(transcriptionId);
+            }
+
+            saveLog(transcriptionId, "poll_sber_task", "GET", response.getStatusCode().value(), "Статус: " + status);
+        } catch (Exception exception) {
+            saveLog(transcriptionId, "poll_sber_task", "GET", statusFromException(exception), messageFromException(exception));
+        }
+    }
 }
