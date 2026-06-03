@@ -7,7 +7,7 @@ public class TranscriptionDetails {
     private Double durationSeconds;
     private Integer characterCount;
     private Integer sentenceCount;
-    private List<SemanticBlock> semanticBlocks;
+    private List<SemanticBlockDto> semanticBlockDtos;
 
     public String getErrorMessage() {
         return errorMessage;
@@ -41,11 +41,11 @@ public class TranscriptionDetails {
         this.sentenceCount = sentenceCount;
     }
 
-    public List<SemanticBlock> getSemanticBlocks() {
-        return semanticBlocks;
+    public List<SemanticBlockDto> getSemanticBlocks() {
+        return semanticBlockDtos;
     }
 
-    public void setSemanticBlocks(List<SemanticBlock> semanticBlocks) {
-        this.semanticBlocks = semanticBlocks;
+    public void setSemanticBlocks(List<SemanticBlockDto> semanticBlockDtos) {
+        this.semanticBlockDtos = semanticBlockDtos;
     }
 }

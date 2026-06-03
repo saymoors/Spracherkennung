@@ -1,6 +1,6 @@
 package mephi.dto;
 
-public class SemanticBlock {
+public class SemanticBlockDto {
     private Integer orderIndex;
     private String textContent;
 
