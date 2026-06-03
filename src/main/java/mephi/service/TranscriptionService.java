@@ -2,6 +2,7 @@ package mephi.service;
 
 import mephi.dto.*;
 import mephi.entity.AudioFile;
+import mephi.entity.ExternalCallLog;
 import mephi.entity.SemanticBlock;
 import mephi.entity.Transcription;
 import mephi.repository.*;
@@ -174,5 +175,68 @@ public class TranscriptionService {
         }
 
         return item;
+    }
+
+    @Transactional(readOnly = true)
+    public TranscriptionDetails getDetails(Integer userId, Integer transcriptionId) throws Exception {
+        Transcription transcription = transcriptionRepository.findById(transcriptionId)
+                .orElseThrow(() -> new Exception("Транскрипция не найдена"));
+
+        AudioFile audioFile = audioFileRepository.findById(transcription.getAudioFileId())
+                .orElseThrow(() -> new Exception("Файл не найден"));
+
+        if (!userId.equals(audioFile.getUserId())) {
+            throw new Exception("Транскрипция не найдена");
+        }
+
+        TranscriptionDetails details = new TranscriptionDetails();
+
+        if ("ERROR".equals(transcription.getStatus())) {
+            details.setErrorMessage(getLastErrorMessage(transcriptionId));
+            return details;
+        }
+
+        if (!"DONE".equals(transcription.getStatus())) {
+            throw new Exception("Распознавание еще не завершено");
+        }
+
+        details.setDurationSeconds(transcription.getDurationSeconds().doubleValue());
+        details.setCharacterCount(transcription.getCharacterCount());
+        details.setSentenceCount(transcription.getSentenceCount());
+        details.setSemanticBlocks(getSemanticBlockDtos(transcriptionId));
+
+        return details;
+    }
+
+    private String getLastErrorMessage(Integer transcriptionId) {
+        ExternalCallLog externalCallLog = externalCallLogRepository
+                .findTopByTranscriptionIdOrderByCreatedAtDesc(transcriptionId)
+                .orElse(null);
+
+        if (externalCallLog != null) {
+            return externalCallLog.getMessage();
+        }
+
+        return "Ошибка при обработке файла";
+    }
+
+    private List<SemanticBlockDto> getSemanticBlockDtos(Integer transcriptionId) {
+        List<SemanticBlock> semanticBlocks = semanticBlockRepository
+                .findByTranscriptionIdOrderByOrderIndexAsc(transcriptionId);
+
+        List<SemanticBlockDto> semanticBlockDtos = new ArrayList<>();
+
+        for (SemanticBlock semanticBlock : semanticBlocks) {
+            semanticBlockDtos.add(toSemanticBlockDto(semanticBlock));
+        }
+
+        return semanticBlockDtos;
+    }
+
+    private SemanticBlockDto toSemanticBlockDto(SemanticBlock semanticBlock) {
+        SemanticBlockDto semanticBlockDto = new SemanticBlockDto();
+        semanticBlockDto.setOrderIndex(semanticBlock.getOrderIndex());
+        semanticBlockDto.setTextContent(semanticBlock.getTextContent());
+        return semanticBlockDto;
     }
 }
