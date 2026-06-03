@@ -29,8 +29,6 @@ import java.util.UUID;
 
 @Service
 public class SaluteSpeechService {
-    private static final String DEFAULT_AUDIO_FORMAT = "MP3";
-    private static final String DEFAULT_AUDIO_LANGUAGE = "ru-RU";
     private static final long SBER_REQUEST_FILE_ID_LIFETIME_HOURS = 72;
     private static final long SBER_RESPONSE_FILE_ID_LIFETIME_HOURS = 72;
 
@@ -298,7 +296,7 @@ public class SaluteSpeechService {
         }
     }
 
-    private String createTask(Integer transcriptionId, String token, UUID sberRequestFileId) {
+    private String createTask(Integer transcriptionId, String token, UUID sberRequestFileId) throws Exception {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", "Bearer " + token);
@@ -354,12 +352,20 @@ public class SaluteSpeechService {
         audioFileRepository.save(audioFile);
     }
 
-    private String getAudioLanguage(Integer transcriptionId) {
-        return DEFAULT_AUDIO_LANGUAGE;
+    private String getAudioLanguage(Integer transcriptionId) throws Exception {
+        Transcription transcription = transcriptionRepository.findById(transcriptionId)
+                .orElseThrow(() -> new Exception("Транскрипция не найдена"));
+        return transcription.getLanguage();
     }
 
-    private String getAudioFormat(Integer transcriptionId) {
-        return DEFAULT_AUDIO_FORMAT;
+    private String getAudioFormat(Integer transcriptionId) throws Exception {
+        Transcription transcription = transcriptionRepository.findById(transcriptionId)
+                .orElseThrow(() -> new Exception("Транскрипция не найдена"));
+
+        AudioFile audioFile = audioFileRepository.findById(transcription.getAudioFileId())
+                .orElseThrow(() -> new Exception("Файл не найден"));
+
+        return audioFile.getFormat();
     }
 
     private int statusFromException(Exception exception) {
@@ -406,8 +412,8 @@ public class SaluteSpeechService {
             log.setHttpStatus(httpStatus);
             log.setMessage(message != null ? message.substring(0, Math.min(message.length(), 1000)) : null);
             externalCallLogRepository.save(log);
-        } catch (Exception e) {
-            System.err.println("Не удалось сохранить лог: " + e.getMessage());
+        } catch (Exception exception) {
+            System.err.println("Не удалось сохранить лог: " + exception.getMessage());
         }
     }
 }
