@@ -142,7 +142,7 @@ public class TranscriptionService {
     }
 
     @Transactional(readOnly = true)
-    public TranscriptionHistoryResponse getHistory(Integer userId, int page, int size) throws Exception {
+    public TranscriptionHistoryResponse getHistory(Integer userId, int page, int size) {
         Slice<Transcription> transcriptions = transcriptionRepository.findByAudioFileUserIdOrderByCreatedAtDesc(
                 userId,
                 PageRequest.of(page, size)
@@ -185,7 +185,7 @@ public class TranscriptionService {
                 .orElseThrow(() -> new Exception("Транскрипция не найдена"));
 
         AudioFile audioFile = audioFileRepository.findById(transcription.getAudioFileId())
-                .orElseThrow(() -> new Exception("Файл не найден"));
+                .orElseThrow(() -> new Exception("Транскрипция не найдена"));
 
         if (!userId.equals(audioFile.getUserId())) {
             throw new Exception("Транскрипция не найдена");
