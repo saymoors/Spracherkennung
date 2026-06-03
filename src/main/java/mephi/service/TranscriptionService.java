@@ -5,10 +5,14 @@ import mephi.entity.AudioFile;
 import mephi.entity.SemanticBlock;
 import mephi.entity.Transcription;
 import mephi.repository.*;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -132,5 +136,43 @@ public class TranscriptionService {
             newTranscriptionSemanticBlock.setTextContent(oldTranscriptionSemanticBlock.getTextContent());
             semanticBlockRepository.save(newTranscriptionSemanticBlock);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public TranscriptionHistoryResponse getHistory(Integer userId, int page, int size) throws Exception {
+        Slice<Transcription> transcriptions = transcriptionRepository.findByAudioFileUserIdOrderByCreatedAtDesc(
+                userId,
+                PageRequest.of(page, size)
+        );
+
+        List<TranscriptionHistoryItem> transcriptionHistoryItems = new ArrayList<>();
+
+        for (Transcription transcription : transcriptions.getContent()) {
+            TranscriptionHistoryItem transcriptionHistoryItem = toTranscriptionHistoryItem(transcription);
+            transcriptionHistoryItems.add(transcriptionHistoryItem);
+        }
+
+        TranscriptionHistoryResponse response = new TranscriptionHistoryResponse();
+        response.setContent(transcriptionHistoryItems);
+        response.setHasMore(transcriptions.hasNext());
+
+        return response;
+    }
+
+    private TranscriptionHistoryItem toTranscriptionHistoryItem(Transcription transcription) {
+        TranscriptionHistoryItem item = new TranscriptionHistoryItem();
+        item.setId(transcription.getId());
+        item.setLanguage(transcription.getLanguage());
+        item.setStatus(transcription.getStatus());
+        item.setUploadedAt(transcription.getCreatedAt());
+
+        AudioFile audioFile = transcription.getAudioFile();
+        if (audioFile != null) {
+            item.setFileName(audioFile.getName());
+            item.setFormat(audioFile.getFormat());
+            item.setSizeBytes(audioFile.getSizeBytes());
+        }
+
+        return item;
     }
 }
