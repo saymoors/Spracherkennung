@@ -27,6 +27,7 @@ CREATE TABLE transcriptions
     language              VARCHAR(10) NOT NULL,
     sber_task_id          VARCHAR(255),
     sber_response_file_id UUID,
+    sber_response_file_received_at TIMESTAMP,
     status                VARCHAR(10) NOT NULL,
     created_at            TIMESTAMP   NOT NULL,
     updated_at            TIMESTAMP   NOT NULL,

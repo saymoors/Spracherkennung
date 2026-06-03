@@ -28,6 +28,9 @@ public class Transcription {
     @Column(name = "sber_response_file_id")
     private UUID sberResponseFileId;
 
+    @Column(name = "sber_response_file_received_at")
+    private LocalDateTime sberResponseFileReceivedAt;
+
     @Column(nullable = false)
     private String status;
 
@@ -92,6 +95,14 @@ public class Transcription {
 
     public void setSberResponseFileId(UUID sberResponseFileId) {
         this.sberResponseFileId = sberResponseFileId;
+    }
+
+    public LocalDateTime getSberResponseFileReceivedAt() {
+        return sberResponseFileReceivedAt;
+    }
+
+    public void setSberResponseFileReceivedAt(LocalDateTime sberResponseFileReceivedAt) {
+        this.sberResponseFileReceivedAt = sberResponseFileReceivedAt;
     }
 
     public String getStatus() {
