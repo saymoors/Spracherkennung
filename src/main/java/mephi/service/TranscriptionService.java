@@ -6,6 +6,8 @@ import mephi.entity.ExternalCallLog;
 import mephi.entity.SemanticBlock;
 import mephi.entity.Transcription;
 import mephi.repository.*;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
@@ -238,5 +240,16 @@ public class TranscriptionService {
         semanticBlockDto.setOrderIndex(semanticBlock.getOrderIndex());
         semanticBlockDto.setTextContent(semanticBlock.getTextContent());
         return semanticBlockDto;
+    }
+
+    public Resource export(Integer userId, Integer transcriptionId) throws Exception {
+        TranscriptionDetails details = getDetails(userId, transcriptionId);
+
+        if (details.getSemanticBlocks() == null || details.getSemanticBlocks().isEmpty()) {
+            throw new Exception("Нет текста для экспорта");
+        }
+
+        byte[] pdf = exportService.generatePdf(transcriptionId);
+        return new ByteArrayResource(pdf);
     }
 }
