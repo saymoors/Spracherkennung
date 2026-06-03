@@ -2,7 +2,7 @@ package mephi.dto;
 
 import java.time.LocalDateTime;
 
-public class TranscriptionListItem {
+public class TranscriptionHistoryItem {
     private Integer id;
     private String fileName;
     private String format;

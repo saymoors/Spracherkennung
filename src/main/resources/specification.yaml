@@ -112,7 +112,7 @@ paths:
           in: query
           schema:
             type: integer
-            default: 20
+            default: 5
       responses:
         '200':
           description: OK
@@ -199,13 +199,10 @@ components:
         content:
           type: array
           items:
-            $ref: '#/components/schemas/TranscriptionListItem'
-        page: { type: integer, example: 0 }
-        size: { type: integer, example: 20 }
-        totalElements: { type: integer, example: 42 }
-        totalPages: { type: integer, example: 3 }
+            $ref: '#/components/schemas/TranscriptionHistoryItem'
+        hasMore: { type: boolean, example: true }
 
-    TranscriptionListItem:
+    TranscriptionHistoryItem:
       type: object
       properties:
         id: { type: integer, example: 42 }

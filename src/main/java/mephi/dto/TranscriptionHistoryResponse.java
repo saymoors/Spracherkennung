@@ -3,49 +3,22 @@ package mephi.dto;
 import java.util.List;
 
 public class TranscriptionHistoryResponse {
-    private List<TranscriptionListItem> content;
-    private Integer page;
-    private Integer size;
-    private Integer totalElements;
-    private Integer totalPages;
+    private List<TranscriptionHistoryItem> content;
+    private Boolean hasMore;
 
-    public List<TranscriptionListItem> getContent() {
+    public List<TranscriptionHistoryItem> getContent() {
         return content;
     }
 
-    public void setContent(List<TranscriptionListItem> content) {
+    public void setContent(List<TranscriptionHistoryItem> content) {
         this.content = content;
     }
 
-    public Integer getPage() {
-        return page;
+    public Boolean getHasMore() {
+        return hasMore;
     }
 
-    public void setPage(Integer page) {
-        this.page = page;
-    }
-
-    public Integer getSize() {
-        return size;
-    }
-
-    public void setSize(Integer size) {
-        this.size = size;
-    }
-
-    public Integer getTotalElements() {
-        return totalElements;
-    }
-
-    public void setTotalElements(Integer totalElements) {
-        this.totalElements = totalElements;
-    }
-
-    public Integer getTotalPages() {
-        return totalPages;
-    }
-
-    public void setTotalPages(Integer totalPages) {
-        this.totalPages = totalPages;
+    public void setHasMore(Boolean hasMore) {
+        this.hasMore = hasMore;
     }
 }
