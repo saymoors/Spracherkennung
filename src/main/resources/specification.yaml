@@ -51,7 +51,7 @@ paths:
         '401':
           description: Неверный email или пароль
 
-  /api/transcriptions/upload:
+  /api/transcriptions/recognize:
     post:
       tags: [Transcriptions]
       summary: Распознать аудио
@@ -68,9 +68,9 @@ paths:
                   description: Поддерживается только MP3.
       responses:
         '202':
-          description: Принято
+          description: Распознавание начато
         '400':
-          description: Файл не подходит для загрузки
+          description: Файл не подходит для распознавания
         '401':
           description: Нет токена
 
@@ -144,6 +144,8 @@ paths:
                 $ref: '#/components/schemas/TranscriptionDetails'
         '401':
           description: Нет токена
+        '404':
+          description: Детали транскрипции недоступны
 
   /api/transcriptions/{id}/export:
     get:
@@ -163,6 +165,8 @@ paths:
               schema:
                 type: string
                 format: binary
+        '400':
+          description: Ошибка экспорта
         '401':
           description: Нет токена
 
