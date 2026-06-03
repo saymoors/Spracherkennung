@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
@@ -103,10 +102,10 @@ public class SaluteSpeechService {
                     .orElseThrow(() -> new Exception("Файл не найден"));
 
             String token = getAccessToken();
-            saveLog(transcriptionId, "get_token", "POST", 200, "Токен получен");
+            saveExternalCallLog(transcriptionId, "get_token", "POST", 200, "Токен получен");
 
             if (isSberResponseFileIdAlive(transcription)) {
-                downloadResult(transcriptionId, transcription.getSberResponseFileId(), token);
+                downloadSberResult(transcriptionId, transcription.getSberResponseFileId(), token);
                 return;
             }
 
@@ -117,8 +116,8 @@ public class SaluteSpeechService {
 
             startTaskWithNewSberFile(transcriptionId, token, audioFile);
         } catch (Exception exception) {
-            saveLog(transcriptionId, "start_recognition", "POST", statusFromException(exception), messageFromException(exception));
-            updateError(transcriptionId);
+            saveExternalCallLog(transcriptionId, "start_recognition", "POST", statusFromException(exception), messageFromException(exception));
+            markTranscriptionAsError(transcriptionId);
         }
     }
 
@@ -135,7 +134,7 @@ public class SaluteSpeechService {
                 && audioFile.getUploadAt().isAfter(LocalDateTime.now().minusHours(SBER_REQUEST_FILE_ID_LIFETIME_HOURS));
     }
 
-    private void downloadResult(Integer transcriptionId, UUID sberResponseFileId, String token) {
+    private void downloadSberResult(Integer transcriptionId, UUID sberResponseFileId, String token) {
         String url = apiUrl + "/data:download?response_file_id=" + sberResponseFileId;
 
         HttpHeaders headers = new HttpHeaders();
@@ -153,7 +152,7 @@ public class SaluteSpeechService {
             int sentenceCount = 0;
 
             List<SemanticBlock> semanticBlocks = new ArrayList<>();
-            int order = 0;
+            int orderIndex = 0;
 
             List<JsonNode> resultsBlocks = new ArrayList<>();
 
@@ -169,7 +168,7 @@ public class SaluteSpeechService {
                         if (!textContent.isEmpty()) {
                             SemanticBlock semanticBlock = new SemanticBlock();
                             semanticBlock.setTranscriptionId(transcriptionId);
-                            semanticBlock.setOrderIndex(order++);
+                            semanticBlock.setOrderIndex(orderIndex++);
                             semanticBlock.setTextContent(textContent);
 
                             semanticBlocks.add(semanticBlock);
@@ -187,25 +186,30 @@ public class SaluteSpeechService {
                 }
             }
 
-            semanticBlockRepository.saveAll(semanticBlocks);
-
-            Transcription transcription = transcriptionRepository.findById(transcriptionId).orElse(null);
-            if (transcription != null) {
-                transcription.setStatus("DONE");
-
-                transcription.setDurationSeconds(BigDecimal.valueOf(durationSeconds));
-                transcription.setCharacterCount(characterCount);
-                transcription.setSentenceCount(sentenceCount);
-
-                transcription.setUpdatedAt(LocalDateTime.now());
-
-                transcriptionRepository.save(transcription);
+            if (semanticBlocks.isEmpty()) {
+                saveExternalCallLog(transcriptionId, "download_sber_result", "GET", 200, "Результат распознавания пустой");
+                markTranscriptionAsError(transcriptionId);
+                return;
             }
 
-            saveLog(transcriptionId, "download_result", "GET", 200, "Сохранено блоков: " + order);
+            Transcription transcription = transcriptionRepository.findById(transcriptionId)
+                    .orElseThrow(() -> new Exception("Транскрипция не найдена"));
+
+            semanticBlockRepository.saveAll(semanticBlocks);
+            transcription.setStatus("DONE");
+
+            transcription.setDurationSeconds(BigDecimal.valueOf(durationSeconds));
+            transcription.setCharacterCount(characterCount);
+            transcription.setSentenceCount(sentenceCount);
+
+            transcription.setUpdatedAt(LocalDateTime.now());
+
+            transcriptionRepository.save(transcription);
+
+            saveExternalCallLog(transcriptionId, "download_sber_result", "GET", 200, "Сохранено блоков: " + orderIndex);
         } catch (Exception exception) {
-            saveLog(transcriptionId, "download_result", "GET", statusFromException(exception), messageFromException(exception));
-            updateError(transcriptionId);
+            saveExternalCallLog(transcriptionId, "download_sber_result", "GET", statusFromException(exception), messageFromException(exception));
+            markTranscriptionAsError(transcriptionId);
         }
     }
 
@@ -247,33 +251,34 @@ public class SaluteSpeechService {
     private void startTaskWithExistingSberFile(Integer transcriptionId, String token, AudioFile audioFile) throws Exception {
         UUID sberRequestFileId = audioFile.getSberRequestFileId();
 
-        String taskId = createTask(transcriptionId, token, sberRequestFileId);
-        if (taskId == null) {
+        String sberTaskId = createSberTask(transcriptionId, token, sberRequestFileId);
+        if (sberTaskId == null) {
             startTaskWithNewSberFile(transcriptionId, token, audioFile);
+            return;
         }
 
-        saveSberTaskId(transcriptionId, taskId);
+        saveSberTaskId(transcriptionId, sberTaskId);
     }
 
     private void startTaskWithNewSberFile(Integer transcriptionId, String token, AudioFile audioFile) throws Exception {
-        UUID sberRequestFileId = uploadFile(transcriptionId, token, Path.of(audioFile.getSystemPath()));
+        UUID sberRequestFileId = uploadFileToSber(transcriptionId, token, Path.of(audioFile.getSystemPath()));
         if (sberRequestFileId == null) {
-            updateError(transcriptionId);
+            markTranscriptionAsError(transcriptionId);
             return;
         }
 
         saveSberRequestFileId(transcriptionId, sberRequestFileId);
 
-        String taskId = createTask(transcriptionId, token, sberRequestFileId);
-        if (taskId == null) {
-            updateError(transcriptionId);
+        String sberTaskId = createSberTask(transcriptionId, token, sberRequestFileId);
+        if (sberTaskId == null) {
+            markTranscriptionAsError(transcriptionId);
             return;
         }
 
-        saveSberTaskId(transcriptionId, taskId);
+        saveSberTaskId(transcriptionId, sberTaskId);
     }
 
-    private UUID uploadFile(Integer transcriptionId, String token, Path filePath) {
+    private UUID uploadFileToSber(Integer transcriptionId, String token, Path filePath) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("audio/mpeg"));
         headers.set("Authorization", "Bearer " + token);
@@ -288,15 +293,15 @@ public class SaluteSpeechService {
             JsonNode json = objectMapper.readTree(response.getBody());
             String id = json.get("result").get("request_file_id").asText();
 
-            saveLog(transcriptionId, "upload_file", "POST", response.getStatusCode().value(), "Загружен: " + id);
+            saveExternalCallLog(transcriptionId, "upload_file_to_sber", "POST", response.getStatusCode().value(), "Загружен: " + id);
             return UUID.fromString(id);
         } catch (Exception e) {
-            saveLog(transcriptionId, "upload_file", "POST", statusFromException(e), messageFromException(e));
+            saveExternalCallLog(transcriptionId, "upload_file_to_sber", "POST", statusFromException(e), messageFromException(e));
             return null;
         }
     }
 
-    private String createTask(Integer transcriptionId, String token, UUID sberRequestFileId) throws Exception {
+    private String createSberTask(Integer transcriptionId, String token, UUID sberRequestFileId) throws Exception {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", "Bearer " + token);
@@ -321,19 +326,19 @@ public class SaluteSpeechService {
             JsonNode json = objectMapper.readTree(response.getBody());
             String taskId = json.get("result").get("id").asText();
 
-            saveLog(transcriptionId, "create_task", "POST", response.getStatusCode().value(), "Создана: " + taskId);
+            saveExternalCallLog(transcriptionId, "create_sber_task", "POST", response.getStatusCode().value(), "Создана: " + taskId);
             return taskId;
         } catch (Exception exception) {
-            saveLog(transcriptionId, "create_task", "POST", statusFromException(exception), messageFromException(exception));
+            saveExternalCallLog(transcriptionId, "create_sber_task", "POST", statusFromException(exception), messageFromException(exception));
             return null;
         }
     }
 
-    private void saveSberTaskId(Integer transcriptionId, String taskId) throws Exception {
+    private void saveSberTaskId(Integer transcriptionId, String sberTaskId) throws Exception {
         Transcription transcription = transcriptionRepository.findById(transcriptionId)
                 .orElseThrow(() -> new Exception("Транскрипция не найдена"));
 
-        transcription.setSberTaskId(taskId);
+        transcription.setSberTaskId(sberTaskId);
         transcription.setStatus("RUNNING");
         transcription.setUpdatedAt(LocalDateTime.now());
         transcriptionRepository.save(transcription);
@@ -385,7 +390,7 @@ public class SaluteSpeechService {
         return exception.getMessage();
     }
 
-    private void updateError(Integer transcriptionId) {
+    private void markTranscriptionAsError(Integer transcriptionId) {
         Transcription transcription = transcriptionRepository.findById(transcriptionId).orElse(null);
         if (transcription != null) {
             transcription.setStatus("ERROR");
@@ -394,7 +399,7 @@ public class SaluteSpeechService {
         }
     }
 
-    private void updateCanceled(Integer transcriptionId) {
+    private void markTranscriptionAsCanceled(Integer transcriptionId) {
         Transcription transcription = transcriptionRepository.findById(transcriptionId).orElse(null);
         if (transcription != null) {
             transcription.setStatus("CANCELED");
@@ -403,7 +408,7 @@ public class SaluteSpeechService {
         }
     }
 
-    private void saveLog(Integer transcriptionId, String operationType, String httpMethod, int httpStatus, String message) {
+    private void saveExternalCallLog(Integer transcriptionId, String operationType, String httpMethod, int httpStatus, String message) {
         try {
             ExternalCallLog log = new ExternalCallLog();
             log.setTranscriptionId(transcriptionId);
@@ -417,7 +422,6 @@ public class SaluteSpeechService {
         }
     }
 
-    @Transactional
     public void pollSberTask(Integer transcriptionId) {
         Transcription transcription = transcriptionRepository.findById(transcriptionId).orElse(null);
         if (transcription == null || !"RUNNING".equals(transcription.getStatus())) {
@@ -446,15 +450,15 @@ public class SaluteSpeechService {
                     transcription.setSberResponseFileReceivedAt(now);
                     transcription.setUpdatedAt(now);
                     transcriptionRepository.save(transcription);
-                    downloadResult(transcriptionId, sberResponseFileId, token);
+                    downloadSberResult(transcriptionId, sberResponseFileId, token);
                 }
-                case "ERROR" -> updateError(transcriptionId);
-                case "CANCELED" -> updateCanceled(transcriptionId);
+                case "ERROR" -> markTranscriptionAsError(transcriptionId);
+                case "CANCELED" -> markTranscriptionAsCanceled(transcriptionId);
             }
 
-            saveLog(transcriptionId, "poll_sber_task", "GET", response.getStatusCode().value(), "Статус: " + status);
+            saveExternalCallLog(transcriptionId, "poll_sber_task", "GET", response.getStatusCode().value(), "Статус: " + status);
         } catch (Exception exception) {
-            saveLog(transcriptionId, "poll_sber_task", "GET", statusFromException(exception), messageFromException(exception));
+            saveExternalCallLog(transcriptionId, "poll_sber_task", "GET", statusFromException(exception), messageFromException(exception));
         }
     }
 }
