@@ -97,8 +97,48 @@ public class SaluteSpeechService {
         return accessToken;
     }
 
-    private void downloadResult(Integer transcriptionId, UUID responseFileId, String token) {
-        String url = apiUrl + "/data:download?response_file_id=" + responseFileId;
+    public void startRecognition(Integer transcriptionId) {
+        try {
+            Transcription transcription = transcriptionRepository.findById(transcriptionId)
+                    .orElseThrow(() -> new Exception("Транскрипция не найдена"));
+            AudioFile audioFile = audioFileRepository.findById(transcription.getAudioFileId())
+                    .orElseThrow(() -> new Exception("Файл не найден"));
+
+            String token = getAccessToken();
+            saveLog(transcriptionId, "get_token", "POST", 200, "Токен получен");
+
+            if (isSberResponseFileIdAlive(transcription)) {
+                downloadResult(transcriptionId, transcription.getSberResponseFileId(), token);
+                return;
+            }
+
+            if (isSberRequestFileIdAlive(audioFile)) {
+                startTaskWithExistingSberFile(transcriptionId, token, audioFile);
+                return;
+            }
+
+            startTaskWithNewSberFile(transcriptionId, token, audioFile);
+        } catch (Exception exception) {
+            saveLog(transcriptionId, "start_recognition", "POST", statusFromException(exception), messageFromException(exception));
+            updateError(transcriptionId);
+        }
+    }
+
+    private boolean isSberResponseFileIdAlive(Transcription transcription) {
+        return transcription.getSberResponseFileId() != null
+                && transcription.getSberResponseFileReceivedAt() != null
+                && transcription.getSberResponseFileReceivedAt()
+                .isAfter(LocalDateTime.now().minusHours(SBER_RESPONSE_FILE_ID_LIFETIME_HOURS));
+    }
+
+    private boolean isSberRequestFileIdAlive(AudioFile audioFile) {
+        return audioFile.getSberRequestFileId() != null
+                && audioFile.getUploadAt() != null
+                && audioFile.getUploadAt().isAfter(LocalDateTime.now().minusHours(SBER_REQUEST_FILE_ID_LIFETIME_HOURS));
+    }
+
+    private void downloadResult(Integer transcriptionId, UUID sberResponseFileId, String token) {
+        String url = apiUrl + "/data:download?response_file_id=" + sberResponseFileId;
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + token);
