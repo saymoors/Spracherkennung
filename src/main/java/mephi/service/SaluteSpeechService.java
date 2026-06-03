@@ -2,6 +2,8 @@ package mephi.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import mephi.entity.AudioFile;
 import mephi.entity.ExternalCallLog;
 import mephi.entity.SemanticBlock;
 import mephi.entity.Transcription;
@@ -10,13 +12,16 @@ import mephi.repository.ExternalCallLogRepository;
 import mephi.repository.SemanticBlockRepository;
 import mephi.repository.TranscriptionRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -199,6 +204,122 @@ public class SaluteSpeechService {
         }
 
         return count;
+    }
+
+    private void startTaskWithExistingSberFile(Integer transcriptionId, String token, AudioFile audioFile) throws Exception {
+        UUID sberRequestFileId = audioFile.getSberRequestFileId();
+
+        String taskId = createTask(transcriptionId, token, sberRequestFileId);
+        if (taskId == null) {
+            startTaskWithNewSberFile(transcriptionId, token, audioFile);
+        }
+
+        saveSberTaskId(transcriptionId, taskId);
+    }
+
+    private void startTaskWithNewSberFile(Integer transcriptionId, String token, AudioFile audioFile) throws Exception {
+        UUID sberRequestFileId = uploadFile(transcriptionId, token, Path.of(audioFile.getSystemPath()));
+        if (sberRequestFileId == null) {
+            updateError(transcriptionId);
+            return;
+        }
+
+        saveSberRequestFileId(transcriptionId, sberRequestFileId);
+
+        String taskId = createTask(transcriptionId, token, sberRequestFileId);
+        if (taskId == null) {
+            updateError(transcriptionId);
+            return;
+        }
+
+        saveSberTaskId(transcriptionId, taskId);
+    }
+
+    private UUID uploadFile(Integer transcriptionId, String token, Path filePath) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("audio/mpeg"));
+        headers.set("Authorization", "Bearer " + token);
+        headers.set("X-Request-ID", UUID.randomUUID().toString());
+
+        try {
+            FileSystemResource resource = new FileSystemResource(filePath.toFile());
+            HttpEntity<FileSystemResource> entity = new HttpEntity<>(resource, headers);
+
+            ResponseEntity<String> response = restTemplate.exchange(apiUrl + "/data:upload", HttpMethod.POST, entity, String.class);
+
+            JsonNode json = objectMapper.readTree(response.getBody());
+            String id = json.get("result").get("request_file_id").asText();
+
+            saveLog(transcriptionId, "upload_file", "POST", response.getStatusCode().value(), "Загружен: " + id);
+            return UUID.fromString(id);
+        } catch (Exception e) {
+            saveLog(transcriptionId, "upload_file", "POST", statusFromException(e), messageFromException(e));
+            return null;
+        }
+    }
+
+    private String createTask(Integer transcriptionId, String token, UUID sberRequestFileId) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + token);
+        headers.set("X-Request-ID", UUID.randomUUID().toString());
+
+        ObjectNode body = objectMapper.createObjectNode();
+        ObjectNode options = body.putObject("options");
+        String audioLanguage = getAudioLanguage(transcriptionId);
+        String audioFormat = getAudioFormat(transcriptionId);
+        options.put("model", "general");
+        options.put("language", audioLanguage);
+        options.put("audio_encoding", audioFormat);
+
+        body.put("request_file_id", sberRequestFileId.toString());
+
+        try {
+            String requestBody = objectMapper.writeValueAsString(body);
+            HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+
+            ResponseEntity<String> response = restTemplate.exchange(apiUrl + "/speech:async_recognize", HttpMethod.POST, entity, String.class);
+
+            JsonNode json = objectMapper.readTree(response.getBody());
+            String taskId = json.get("result").get("id").asText();
+
+            saveLog(transcriptionId, "create_task", "POST", response.getStatusCode().value(), "Создана: " + taskId);
+            return taskId;
+        } catch (Exception exception) {
+            saveLog(transcriptionId, "create_task", "POST", statusFromException(exception), messageFromException(exception));
+            return null;
+        }
+    }
+
+    private void saveSberTaskId(Integer transcriptionId, String taskId) throws Exception {
+        Transcription transcription = transcriptionRepository.findById(transcriptionId)
+                .orElseThrow(() -> new Exception("Транскрипция не найдена"));
+
+        transcription.setSberTaskId(taskId);
+        transcription.setStatus("RUNNING");
+        transcription.setUpdatedAt(LocalDateTime.now());
+        transcriptionRepository.save(transcription);
+    }
+
+    private void saveSberRequestFileId(Integer transcriptionId, UUID sberRequestFileId) throws Exception {
+        Transcription transcription = transcriptionRepository.findById(transcriptionId)
+                .orElseThrow(() -> new Exception("Транскрипция не найдена"));
+
+        AudioFile audioFile = audioFileRepository.findById(transcription.getAudioFileId())
+                .orElseThrow(() -> new Exception("Файл не найден"));
+
+        audioFile.setSberRequestFileId(sberRequestFileId);
+        audioFile.setUploadAt(LocalDateTime.now());
+
+        audioFileRepository.save(audioFile);
+    }
+
+    private String getAudioLanguage(Integer transcriptionId) {
+        return DEFAULT_AUDIO_LANGUAGE;
+    }
+
+    private String getAudioFormat(Integer transcriptionId) {
+        return DEFAULT_AUDIO_FORMAT;
     }
 
     private int statusFromException(Exception exception) {
