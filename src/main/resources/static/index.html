@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Аудио конспект</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- Форма регистрации -->
+<div id="registerForm" class="form-container">
+    <div class="form-card">
+        <h2>Регистрация</h2>
+        <input type="text" id="regLogin" placeholder="Логин">
+        <input type="email" id="regEmail" placeholder="Email">
+        <input type="password" id="regPassword" placeholder="Пароль">
+        <button id="registerBtn" type="button">Зарегистрироваться</button>
+        <p class="switch">Уже есть аккаунт? <button id="showLoginBtn" type="button" class="switch-button">Войти</button></p>
+        <div id="regError" class="error-message"></div>
+    </div>
+</div>
+
+<!-- Форма входа -->
+<div id="loginForm" class="form-container" hidden>
+    <div class="form-card">
+        <h2>Вход</h2>
+        <input type="text" id="loginLogin" placeholder="Логин">
+        <input type="password" id="loginPassword" placeholder="Пароль">
+        <button id="loginBtn" type="button">Войти</button>
+        <p class="switch">Нет аккаунта? <button id="showRegisterBtn" type="button" class="switch-button">Зарегистрироваться</button></p>
+        <div id="loginError" class="error-message"></div>
+    </div>
+</div>
+
+<!-- Главное окно -->
+<div id="mainApp" hidden>
+    <div class="app-container">
+        <div class="app-wrapper">
+            <!-- Хедер -->
+            <div class="header">
+                <div class="header-right">
+                    <span id="userLogin" class="user-login"></span>
+                    <button id="logoutBtn" class="logout-btn" type="button">Выйти</button>
+                </div>
+            </div>
+
+            <!-- Блок загрузки -->
+            <div class="upload-section">
+                <h3>Распознавание файла</h3>
+                <div class="upload-card">
+                    <div class="upload-row">
+                        <div class="file-input-wrapper">
+                            <input type="file" id="fileInput">
+                            <label for="fileInput" class="file-label" id="fileLabel">Выберите файл</label>
+                        </div>
+                        <button id="uploadBtn" type="button">Распознать</button>
+                        <button id="recognizeAgainBtn" class="secondary-btn" type="button">Распознать заново</button>
+                    </div>
+                    <div id="uploadStatus" class="upload-status"></div>
+                </div>
+            </div>
+
+            <!-- Блок истории -->
+            <div class="history-section">
+                <h3>История транскрипций</h3>
+                <div class="history-list">
+                    <div class="history-table">
+                        <div class="history-header">
+                            <div>Название</div>
+                            <div>Формат</div>
+                            <div>Язык</div>
+                            <div>Размер</div>
+                            <div>Дата</div>
+                            <div>Статус</div>
+                        </div>
+                        <div class="history-body" id="historyList">
+                            <div class="loading">Загрузка...</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="loadMoreContainer" class="load-more-container" hidden>
+                    <button id="loadMoreBtn" class="load-more-btn">Загрузить ещё</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно -->
+<div id="detailsModal" class="modal">
+    <div class="modal-content">
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
