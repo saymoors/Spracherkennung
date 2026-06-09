@@ -126,7 +126,7 @@ public class AudioFileService {
         try {
             String originalFilename = getOriginalFileName(file);
 
-            Path uploadPath = Paths.get(uploadDir);
+            Path uploadPath = Paths.get(uploadDir).toAbsolutePath();
             Files.createDirectories(uploadPath);
 
             String savedFilename = UUID.randomUUID() + "_" + originalFilename;

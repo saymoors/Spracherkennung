@@ -442,6 +442,8 @@ public class SaluteSpeechService {
             JsonNode json = objectMapper.readTree(response.getBody());
             String status = json.get("result").get("status").asText();
 
+            saveExternalCallLog(transcriptionId, "poll_sber_task", "GET", response.getStatusCode().value(), "Статус: " + status);
+
             switch (status) {
                 case "DONE" -> {
                     UUID sberResponseFileId = UUID.fromString(json.get("result").get("response_file_id").asText());
@@ -455,8 +457,6 @@ public class SaluteSpeechService {
                 case "ERROR" -> markTranscriptionAsError(transcriptionId);
                 case "CANCELED" -> markTranscriptionAsCanceled(transcriptionId);
             }
-
-            saveExternalCallLog(transcriptionId, "poll_sber_task", "GET", response.getStatusCode().value(), "Статус: " + status);
         } catch (Exception exception) {
             saveExternalCallLog(transcriptionId, "poll_sber_task", "GET", statusFromException(exception), messageFromException(exception));
         }

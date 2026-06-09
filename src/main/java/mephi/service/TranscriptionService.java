@@ -55,7 +55,6 @@ public class TranscriptionService {
         Transcription newTranscription = createNewTranscription(audioFile);
 
         if (hasSemanticBlocks(reusableTranscription)) {
-            copySberResponseFileId(reusableTranscription, newTranscription);
             copyCompletedResult(reusableTranscription, newTranscription);
             return;
         }
