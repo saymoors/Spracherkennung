@@ -16,10 +16,26 @@ public class SpracherkennungApplication {
                 .ignoreIfMissing()
                 .load();
 
-        setProperty(dotenv, "JWT_SECRET");
-        setProperty(dotenv, "JWT_EXPIRATION_MS");
-        setProperty(dotenv, "SALUTESPEECH_CLIENT_ID");
-        setProperty(dotenv, "SALUTESPEECH_CLIENT_SECRET");
+        String[] environmentKeys = {
+                "SERVER_PORT",
+                "POSTGRES_HOST",
+                "POSTGRES_PORT",
+                "POSTGRES_DB",
+                "POSTGRES_USER",
+                "POSTGRES_PASSWORD",
+                "UPLOAD_DIR",
+                "JWT_SECRET",
+                "JWT_EXPIRATION_MS",
+                "SALUTESPEECH_CLIENT_ID",
+                "SALUTESPEECH_CLIENT_SECRET",
+                "SALUTESPEECH_AUTH_URL",
+                "SALUTESPEECH_API_URL",
+                "SALUTESPEECH_SCOPE"
+        };
+
+        for (String environmentKey : environmentKeys) {
+            setProperty(dotenv, environmentKey);
+        }
 
         SpringApplication.run(SpracherkennungApplication.class, args);
     }

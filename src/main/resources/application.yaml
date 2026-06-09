@@ -2,9 +2,9 @@ spring:
   application:
     name: spracherkennung
   datasource:
-    url: jdbc:postgresql://localhost:5432/spracherkennung
-    username: postgres
-    password: postgres
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
   sql:
     init:
       mode: always
@@ -15,10 +15,10 @@ spring:
   servlet:
     multipart:
       max-file-size: 250MB
-      max-request-size: 250MB
+      max-request-size: 260MB
 
 server:
-  port: 1807
+  port: ${SERVER_PORT}
 
 springdoc:
   swagger-ui:
@@ -29,12 +29,12 @@ springdoc:
 salutespeech:
   client-id: ${SALUTESPEECH_CLIENT_ID}
   client-secret: ${SALUTESPEECH_CLIENT_SECRET}
-  auth-url: https://ngw.devices.sberbank.ru:9443/api/v2/oauth
-  api-url: https://smartspeech.sber.ru/rest/v1
-  scope: SALUTE_SPEECH_PERS
+  auth-url: ${SALUTESPEECH_AUTH_URL}
+  api-url: ${SALUTESPEECH_API_URL}
+  scope: ${SALUTESPEECH_SCOPE}
 
 spracherkennung:
-  upload-dir: uploads
+  upload-dir: ${UPLOAD_DIR}
 
 jwt:
   secret: ${JWT_SECRET}
