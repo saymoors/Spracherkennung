@@ -1,4 +1,4 @@
-CREATE TABLE users
+CREATE TABLE IF NOT EXISTS users
 (
     id            SERIAL PRIMARY KEY,
     login         VARCHAR(255) NOT NULL UNIQUE,
@@ -7,7 +7,7 @@ CREATE TABLE users
     created_at    TIMESTAMP    NOT NULL
 );
 
-CREATE TABLE audio_files
+CREATE TABLE IF NOT EXISTS audio_files
 (
     id                   SERIAL PRIMARY KEY,
     user_id              INTEGER      NOT NULL REFERENCES users (id) ON DELETE CASCADE,
@@ -20,7 +20,7 @@ CREATE TABLE audio_files
     upload_at            TIMESTAMP
 );
 
-CREATE TABLE transcriptions
+CREATE TABLE IF NOT EXISTS transcriptions
 (
     id                    SERIAL PRIMARY KEY,
     audio_file_id         INTEGER     NOT NULL REFERENCES audio_files (id) ON DELETE CASCADE,
@@ -36,7 +36,7 @@ CREATE TABLE transcriptions
     sentence_count        INTEGER
 );
 
-CREATE TABLE external_call_logs
+CREATE TABLE IF NOT EXISTS external_call_logs
 (
     id               SERIAL PRIMARY KEY,
     transcription_id INTEGER     NOT NULL REFERENCES transcriptions (id) ON DELETE CASCADE,
@@ -47,7 +47,7 @@ CREATE TABLE external_call_logs
     created_at       TIMESTAMP   NOT NULL
 );
 
-CREATE TABLE semantic_blocks
+CREATE TABLE IF NOT EXISTS semantic_blocks
 (
     id               SERIAL PRIMARY KEY,
     transcription_id INTEGER NOT NULL REFERENCES transcriptions (id) ON DELETE CASCADE,
@@ -55,11 +55,11 @@ CREATE TABLE semantic_blocks
     text_content     TEXT    NOT NULL
 );
 
-CREATE INDEX idx_audio_file_user_upload_at ON audio_files (user_id, upload_at DESC);
-CREATE INDEX idx_audio_file_user_hash ON audio_files (user_id, file_hash);
-CREATE INDEX idx_audio_file_user_hash_name ON audio_files (user_id, file_hash, name);
-CREATE INDEX idx_transcription_audio_file_id ON transcriptions (audio_file_id);
-CREATE INDEX idx_transcription_status ON transcriptions (status);
-CREATE INDEX idx_transcription_created_at ON transcriptions (created_at DESC);
-CREATE INDEX idx_external_call_log_transcription_id ON external_call_logs (transcription_id);
-CREATE INDEX idx_semantic_block_transcription_id ON semantic_blocks (transcription_id);
+CREATE INDEX IF NOT EXISTS idx_audio_file_user_upload_at ON audio_files (user_id, upload_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audio_file_user_hash ON audio_files (user_id, file_hash);
+CREATE INDEX IF NOT EXISTS idx_audio_file_user_hash_name ON audio_files (user_id, file_hash, name);
+CREATE INDEX IF NOT EXISTS idx_transcription_audio_file_id ON transcriptions (audio_file_id);
+CREATE INDEX IF NOT EXISTS idx_transcription_status ON transcriptions (status);
+CREATE INDEX IF NOT EXISTS idx_transcription_created_at ON transcriptions (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_external_call_log_transcription_id ON external_call_logs (transcription_id);
+CREATE INDEX IF NOT EXISTS idx_semantic_block_transcription_id ON semantic_blocks (transcription_id);
