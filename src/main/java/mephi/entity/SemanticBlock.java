@@ -19,7 +19,7 @@ public class SemanticBlock {
     @Column(name = "order_index", nullable = false)
     private Integer orderIndex;
 
-    @Column(name = "text_content", nullable = false)
+    @Column(name = "text_content", nullable = false, columnDefinition = "TEXT")
     private String textContent;
 
     public Integer getId() {

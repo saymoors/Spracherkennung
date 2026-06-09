@@ -19,7 +19,7 @@ public class Transcription {
     @JoinColumn(name = "audio_file_id", insertable = false, updatable = false)
     private AudioFile audioFile;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
     private String language;
 
     @Column(name = "sber_task_id")
@@ -31,7 +31,7 @@ public class Transcription {
     @Column(name = "sber_response_file_received_at")
     private LocalDateTime sberResponseFileReceivedAt;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
     private String status;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -40,7 +40,7 @@ public class Transcription {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @Column(name = "duration_seconds")
+    @Column(name = "duration_seconds", precision = 10, scale = 2)
     private BigDecimal durationSeconds;
 
     @Column(name = "character_count")

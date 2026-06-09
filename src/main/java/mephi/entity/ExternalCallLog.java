@@ -17,10 +17,10 @@ public class ExternalCallLog {
     @JoinColumn(name = "transcription_id", insertable = false, updatable = false)
     private Transcription transcription;
 
-    @Column(name = "operation_type", nullable = false)
+    @Column(name = "operation_type", nullable = false, length = 20)
     private String operationType;
 
-    @Column(name = "http_method", nullable = false)
+    @Column(name = "http_method", nullable = false, length = 10)
     private String httpMethod;
 
     @Column(name = "http_status")

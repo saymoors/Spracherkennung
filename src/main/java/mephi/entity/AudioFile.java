@@ -21,10 +21,10 @@ public class AudioFile {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
     private String format;
 
-    @Column(name = "file_hash", nullable = false)
+    @Column(name = "file_hash", nullable = false, length = 100)
     private String fileHash;
 
     @Column(name = "system_path", nullable = false)
