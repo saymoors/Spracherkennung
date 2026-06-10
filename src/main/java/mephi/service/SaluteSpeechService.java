@@ -144,7 +144,7 @@ public class SaluteSpeechService {
     private void startTaskWithNewSberFile(Integer transcriptionId, String token, AudioFile audioFile) throws Exception {
         SberUploadFileResponse uploadResponse;
         try {
-            uploadResponse = sberFileClient.uploadFile(audioFile.getSystemPath(), token);
+            uploadResponse = sberFileClient.uploadFile(audioFile.getSystemPath(), audioFile.getFormat(), token);
         } catch (Exception exception) {
             externalCallLogService.save(
                     transcriptionId,

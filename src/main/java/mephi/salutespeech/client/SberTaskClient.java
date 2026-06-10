@@ -3,6 +3,7 @@ package mephi.salutespeech.client;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import mephi.audio.AudioFormat;
 import mephi.salutespeech.model.SberCreateTaskResponse;
 import mephi.salutespeech.model.SberPollTaskResponse;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,7 +35,7 @@ public class SberTaskClient {
         ObjectNode options = body.putObject("options");
         options.put("model", "general");
         options.put("language", audioLanguage);
-        options.put("audio_encoding", audioFormat);
+        options.put("audio_encoding", AudioFormat.fromExtension(audioFormat).getSberAudioEncoding());
         body.put("request_file_id", requestFileId.toString());
 
         HttpEntity<String> entity = new HttpEntity<>(objectMapper.writeValueAsString(body), headers);

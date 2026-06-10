@@ -1,11 +1,10 @@
 package mephi.validation.file;
 
+import mephi.audio.AudioFormat;
 import mephi.validation.BaseValidationRule;
 import org.springframework.web.multipart.MultipartFile;
 
 public class SupportedAudioFormatValidationRule extends BaseValidationRule<MultipartFile> {
-    private static final String SUPPORTED_AUDIO_FORMAT = "MP3";
-
     @Override
     protected void check(MultipartFile file) throws Exception {
         String originalFilename = file.getOriginalFilename();
@@ -17,7 +16,7 @@ public class SupportedAudioFormatValidationRule extends BaseValidationRule<Multi
 
         String audioFormat = originalFilename.substring(dotIndex + 1).toUpperCase();
 
-        if (!SUPPORTED_AUDIO_FORMAT.equals(audioFormat)) {
+        if (!AudioFormat.isSupported(audioFormat)) {
             throw new Exception("Неподдерживаемый формат файла");
         }
     }
