@@ -555,11 +555,17 @@ function renderModal(data, id) {
     modalContent.classList.remove('error-modal');
 
     let statsHtml = '';
-    if (data.durationSeconds || data.characterCount || data.sentenceCount) {
+    if (data.fileName || data.durationSeconds || data.characterCount || data.sentenceCount) {
         statsHtml = `
             <div class="modal-stats">
                 <h4>Статистика</h4>
                 <div class="stats-grid">
+                    ${data.fileName ? `
+                        <div class="stat-item">
+                            <span class="stat-label">Файл</span>
+                            <span class="stat-value file-name">${escapeHtml(data.fileName)}</span>
+                        </div>
+                    ` : ''}
                     ${data.durationSeconds ? `
                         <div class="stat-item">
                             <span class="stat-label">Длительность</span>

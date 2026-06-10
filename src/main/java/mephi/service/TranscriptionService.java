@@ -206,6 +206,7 @@ public class TranscriptionService {
         }
 
         TranscriptionDetails details = new TranscriptionDetails();
+        details.setFileName(getFileNameWithoutExtension(audioFile));
 
         if (TranscriptionStatus.ERROR.equals(transcription.getStatus()) || TranscriptionStatus.CANCELED.equals(transcription.getStatus())) {
             details.setErrorMessage(getLastMessage(transcriptionId));
@@ -222,6 +223,12 @@ public class TranscriptionService {
         details.setSemanticBlocks(getSemanticBlockDtos(transcriptionId));
 
         return details;
+    }
+
+    private String getFileNameWithoutExtension(AudioFile audioFile) {
+        String fileName = audioFile.getName();
+
+        return fileName.substring(0, fileName.lastIndexOf("."));
     }
 
     private String getLastMessage(Integer transcriptionId) {
@@ -263,7 +270,7 @@ public class TranscriptionService {
             throw new Exception("Нет текста для экспорта");
         }
 
-        byte[] pdf = exportService.generatePdf(transcriptionId);
+        byte[] pdf = exportService.generatePdf(transcriptionId, details.getFileName());
         return new ByteArrayResource(pdf);
     }
 }

@@ -4,6 +4,7 @@ import java.util.List;
 
 public class TranscriptionDetails {
     private String errorMessage;
+    private String fileName;
     private Double durationSeconds;
     private Integer characterCount;
     private Integer sentenceCount;
@@ -15,6 +16,14 @@ public class TranscriptionDetails {
 
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
     }
 
     public Double getDurationSeconds() {

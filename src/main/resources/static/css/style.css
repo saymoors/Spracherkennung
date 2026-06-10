@@ -630,6 +630,12 @@ body {
     color: #008800;
 }
 
+.stat-value.file-name {
+    max-width: 220px;
+    font-size: 18px;
+    overflow-wrap: anywhere;
+}
+
 .modal-text {
     line-height: 1.7;
     color: #1a1a1a;

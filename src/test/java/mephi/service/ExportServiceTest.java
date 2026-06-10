@@ -26,7 +26,7 @@ class ExportServiceTest {
         when(semanticBlockRepository.findByTranscriptionIdOrderByOrderIndexAsc(1))
                 .thenReturn(List.of(semanticBlock));
 
-        byte[] pdf = exportService.generatePdf(1);
+        byte[] pdf = exportService.generatePdf(1, "Lecture");
 
         assertTrue(new String(pdf, 0, 4, StandardCharsets.US_ASCII).startsWith("%PDF"));
         assertTrue(pdf.length > 100);

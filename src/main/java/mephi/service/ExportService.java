@@ -27,7 +27,7 @@ public class ExportService {
         this.semanticBlockRepository = semanticBlockRepository;
     }
 
-    public byte[] generatePdf(Integer transcriptionId) throws Exception {
+    public byte[] generatePdf(Integer transcriptionId, String title) throws Exception {
         List<SemanticBlock> blocks = semanticBlockRepository.findByTranscriptionIdOrderByOrderIndexAsc(transcriptionId);
 
         if (blocks.isEmpty()) {
@@ -42,7 +42,7 @@ public class ExportService {
             PdfFont gothicFont = createGothicFont();
 
             document.setFont(gothicFont);
-            document.add(new Paragraph("Аудиорасшифровка").setFontSize(16).setFontColor(new DeviceRgb(120, 23, 23)));
+            document.add(new Paragraph(getPdfTitle(title)).setFontSize(16).setFontColor(new DeviceRgb(120, 23, 23)));
 
             for (SemanticBlock block : blocks) {
                 if (block.getTextContent() != null && !block.getTextContent().isEmpty()) {
@@ -55,6 +55,14 @@ public class ExportService {
         } catch (Exception exception) {
             throw new Exception("Ошибка генерации PDF: " + exception.getMessage());
         }
+    }
+
+    private String getPdfTitle(String title) {
+        if (title == null || title.isBlank()) {
+            return "Аудиоконспект";
+        }
+
+        return title;
     }
 
     private PdfFont createGothicFont() throws Exception {
