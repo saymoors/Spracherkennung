@@ -5,6 +5,7 @@ import mephi.dto.LoginResponse;
 import mephi.dto.RegisterRequest;
 import mephi.entity.User;
 import mephi.repository.UserRepository;
+import mephi.validation.RegistrationValidationChain;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -13,27 +14,24 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final RegistrationValidationChain registrationValidationChain;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public AuthService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder,
+                       JwtService jwtService,
+                       RegistrationValidationChain registrationValidationChain) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.registrationValidationChain = registrationValidationChain;
     }
 
     public void register(RegisterRequest request) throws Exception {
-        String login = request.getLogin() != null ? request.getLogin().trim() : "";
-        String email = request.getEmail() != null ? request.getEmail().trim() : "";
-        String password = request.getPassword() != null ? request.getPassword() : "";
+        String login = request != null && request.getLogin() != null ? request.getLogin().trim() : "";
+        String email = request != null && request.getEmail() != null ? request.getEmail().trim() : "";
+        String password = request != null && request.getPassword() != null ? request.getPassword() : "";
 
-        if (login.isEmpty()) {
-            throw new Exception("Логин не может быть пустым");
-        }
-        if (email.isEmpty()) {
-            throw new Exception("Email не может быть пустым");
-        }
-        if (password.isEmpty()) {
-            throw new Exception("Пароль не может быть пустым");
-        }
+        validateRegistration(login, email, password);
 
         if (userRepository.existsByEmail(email)) {
             throw new Exception("Email уже занят");
@@ -72,5 +70,9 @@ public class AuthService {
         response.setToken(token);
 
         return response;
+    }
+
+    private void validateRegistration(String login, String email, String password) throws Exception {
+        registrationValidationChain.validate(login, email, password);
     }
 }
