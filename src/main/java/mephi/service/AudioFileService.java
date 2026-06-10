@@ -2,6 +2,7 @@ package mephi.service;
 
 import mephi.entity.AudioFile;
 import mephi.repository.AudioFileRepository;
+import mephi.validation.AudioFileValidationChain;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,17 +18,18 @@ import java.util.UUID;
 
 @Service
 public class AudioFileService {
-    private static final String SUPPORTED_AUDIO_FORMAT = "MP3";
     private static final long SBER_REQUEST_FILE_ID_LIFETIME_HOURS = 72;
-    private static final long MAX_FILE_SIZE_BYTES = 250L * 1024 * 1024;
 
     @Value("${spracherkennung.upload-dir}")
     private String uploadDir;
 
     private final AudioFileRepository audioFileRepository;
+    private final AudioFileValidationChain audioFileValidationChain;
 
-    public AudioFileService(AudioFileRepository audioFileRepository) {
+    public AudioFileService(AudioFileRepository audioFileRepository,
+                            AudioFileValidationChain audioFileValidationChain) {
         this.audioFileRepository = audioFileRepository;
+        this.audioFileValidationChain = audioFileValidationChain;
     }
 
     public AudioFile getFileForRecognition(Integer userId, MultipartFile file, boolean isAnewRecognition) throws Exception {
@@ -66,25 +68,7 @@ public class AudioFileService {
     }
 
     private void validateFile(MultipartFile file) throws Exception {
-        if (file == null || file.isEmpty()) {
-            throw new Exception("Файл не выбран");
-        }
-
-        String originalFilename = getOriginalFileName(file);
-        if (originalFilename == null || originalFilename.isBlank()) {
-            throw new Exception("У файла отсутствует имя");
-        }
-        if (!originalFilename.contains(".") || originalFilename.endsWith(".")) {
-            throw new Exception("У файла отсутствует расширение");
-        }
-
-        if (!SUPPORTED_AUDIO_FORMAT.equals(getAudioFormat(file))) {
-            throw new Exception("Неподдерживаемый формат файла");
-        }
-
-        if (file.getSize() > MAX_FILE_SIZE_BYTES) {
-            throw new Exception("Файл слишком большой. Максимальный размер 250 МБ");
-        }
+        audioFileValidationChain.validate(file);
     }
 
     private String getOriginalFileName(MultipartFile file) {
