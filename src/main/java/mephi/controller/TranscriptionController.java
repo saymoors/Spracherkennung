@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import mephi.audio.RecognitionLanguage;
 import mephi.dto.TranscriptionDetails;
 import mephi.dto.TranscriptionHistoryResponse;
 import mephi.service.TranscriptionService;
@@ -34,10 +35,11 @@ public class TranscriptionController {
             @ApiResponse(responseCode = "400", description = "Файл не подходит для распознавания"),
             @ApiResponse(responseCode = "401", description = "Нет токена")
     })
-    public ResponseEntity<?> recognize(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> recognize(@RequestParam("file") MultipartFile file,
+                                       @RequestParam(value = "language", defaultValue = RecognitionLanguage.DEFAULT_CODE) String language) {
         try {
             Integer userId = (Integer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            transcriptionService.recognize(userId, file);
+            transcriptionService.recognize(userId, file, language);
             return ResponseEntity.status(HttpStatus.ACCEPTED).body("Распознавание начато");
         } catch (Exception exception) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception.getMessage());
@@ -51,10 +53,11 @@ public class TranscriptionController {
             @ApiResponse(responseCode = "400", description = "Файл еще не существует в системе или не подходит для распознавания"),
             @ApiResponse(responseCode = "401", description = "Нет токена")
     })
-    public ResponseEntity<?> recognizeAgain(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> recognizeAgain(@RequestParam("file") MultipartFile file,
+                                            @RequestParam(value = "language", defaultValue = RecognitionLanguage.DEFAULT_CODE) String language) {
         try {
             Integer userId = (Integer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            transcriptionService.recognizeAgain(userId, file);
+            transcriptionService.recognizeAgain(userId, file, language);
             return ResponseEntity.status(HttpStatus.ACCEPTED).body("Повторное распознавание начато");
         } catch (Exception exception) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception.getMessage());

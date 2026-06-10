@@ -8,6 +8,7 @@ import mephi.repository.SemanticBlockRepository;
 import mephi.repository.TranscriptionRepository;
 import mephi.salutespeech.model.SberRecognitionResult;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -65,6 +66,7 @@ public class SaluteSpeechDataService {
         transcriptionRepository.save(transcription);
     }
 
+    @Transactional
     public void saveDoneResult(Integer transcriptionId, SberRecognitionResult sberRecognitionResult) throws Exception {
         Transcription transcription = getTranscription(transcriptionId);
         List<SemanticBlock> semanticBlocks = createSemanticBlocks(transcriptionId, sberRecognitionResult.textBlocks());

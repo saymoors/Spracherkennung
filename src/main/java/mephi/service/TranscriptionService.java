@@ -1,5 +1,6 @@
 package mephi.service;
 
+import mephi.audio.RecognitionLanguage;
 import mephi.dto.*;
 import mephi.entity.AudioFile;
 import mephi.entity.ExternalCallLog;
@@ -20,8 +21,6 @@ import java.util.List;
 
 @Service
 public class TranscriptionService {
-    private static final String RECOGNITION_LANGUAGE = "ru-RU";
-
     private final AudioFileService audioFileService;
     private final AudioFileRepository audioFileRepository;
     private final TranscriptionRepository transcriptionRepository;
@@ -46,13 +45,14 @@ public class TranscriptionService {
         this.saluteSpeechService = saluteSpeechService;
     }
 
-    public void recognize(Integer userId, MultipartFile file) throws Exception {
+    public void recognize(Integer userId, MultipartFile file, String language) throws Exception {
+        String recognitionLanguage = getRecognitionLanguage(language);
         AudioFile audioFile = audioFileService.getFileForRecognition(userId, file, false);
         List<AudioFile> sameHashAudioFiles = audioFileRepository
                 .findByUserIdAndFileHashOrderByUploadAtDesc(userId, audioFile.getFileHash());
-        Transcription reusableTranscription = findReusableTranscription(sameHashAudioFiles);
+        Transcription reusableTranscription = findReusableTranscription(sameHashAudioFiles, recognitionLanguage);
 
-        Transcription newTranscription = createNewTranscription(audioFile);
+        Transcription newTranscription = createNewTranscription(audioFile, recognitionLanguage);
 
         if (hasSemanticBlocks(reusableTranscription)) {
             copyCompletedResult(reusableTranscription, newTranscription);
@@ -61,20 +61,30 @@ public class TranscriptionService {
 
         if (hasSberResponseFileId(reusableTranscription)) {
             copySberResponseFileId(reusableTranscription, newTranscription);
+            transcriptionRepository.save(newTranscription);
         }
 
-        transcriptionRepository.save(newTranscription);
         saluteSpeechService.startRecognition(newTranscription.getId());
     }
 
-    public void recognizeAgain(Integer userId, MultipartFile file) throws Exception {
+    public void recognizeAgain(Integer userId, MultipartFile file, String language) throws Exception {
+        String recognitionLanguage = getRecognitionLanguage(language);
         AudioFile audioFile = audioFileService.getFileForRecognition(userId, file, true);
 
-        Transcription newTranscription = createNewTranscription(audioFile);
+        Transcription newTranscription = createNewTranscription(audioFile, recognitionLanguage);
         saluteSpeechService.startRecognition(newTranscription.getId());
     }
 
-    private Transcription findReusableTranscription(List<AudioFile> sameHashAudioFiles) {
+    private String getRecognitionLanguage(String language) throws Exception {
+        String recognitionLanguage = language == null ? "" : language.trim();
+        if (RecognitionLanguage.isSupported(recognitionLanguage)) {
+            return recognitionLanguage;
+        }
+
+        throw new Exception("Неподдерживаемый язык распознавания");
+    }
+
+    private Transcription findReusableTranscription(List<AudioFile> sameHashAudioFiles, String recognitionLanguage) {
         Transcription reusableResponseFileTranscription = null;
 
         for (AudioFile sameHashAudioFile : sameHashAudioFiles) {
@@ -82,6 +92,9 @@ public class TranscriptionService {
                     .findByAudioFileIdOrderByCreatedAtDesc(sameHashAudioFile.getId());
 
             for (Transcription sameHashAudioFileTranscription : sameHashAudioFileTranscriptions) {
+                if (!recognitionLanguage.equals(sameHashAudioFileTranscription.getLanguage())) {
+                    continue;
+                }
                 if (hasSemanticBlocks(sameHashAudioFileTranscription)) {
                     return sameHashAudioFileTranscription;
                 }
@@ -94,10 +107,10 @@ public class TranscriptionService {
         return reusableResponseFileTranscription;
     }
 
-    private Transcription createNewTranscription(AudioFile audioFile) {
+    private Transcription createNewTranscription(AudioFile audioFile, String recognitionLanguage) {
         Transcription transcription = new Transcription();
         transcription.setAudioFileId(audioFile.getId());
-        transcription.setLanguage(RECOGNITION_LANGUAGE);
+        transcription.setLanguage(recognitionLanguage);
         transcription.setStatus("NEW");
         transcription.setCreatedAt(LocalDateTime.now());
         transcription.setUpdatedAt(LocalDateTime.now());
@@ -122,7 +135,6 @@ public class TranscriptionService {
     }
 
     private void copyCompletedResult(Transcription oldTranscription, Transcription newTranscription) {
-        newTranscription.setStatus(oldTranscription.getStatus());
         newTranscription.setDurationSeconds(oldTranscription.getDurationSeconds());
         newTranscription.setCharacterCount(oldTranscription.getCharacterCount());
         newTranscription.setSentenceCount(oldTranscription.getSentenceCount());
@@ -131,13 +143,19 @@ public class TranscriptionService {
 
         List<SemanticBlock> oldTranscriptionSemanticBlocks = semanticBlockRepository
                 .findByTranscriptionIdOrderByOrderIndexAsc(oldTranscription.getId());
+        List<SemanticBlock> newTranscriptionSemanticBlocks = new ArrayList<>();
         for (SemanticBlock oldTranscriptionSemanticBlock : oldTranscriptionSemanticBlocks) {
             SemanticBlock newTranscriptionSemanticBlock = new SemanticBlock();
             newTranscriptionSemanticBlock.setTranscriptionId(newTranscription.getId());
             newTranscriptionSemanticBlock.setOrderIndex(oldTranscriptionSemanticBlock.getOrderIndex());
             newTranscriptionSemanticBlock.setTextContent(oldTranscriptionSemanticBlock.getTextContent());
-            semanticBlockRepository.save(newTranscriptionSemanticBlock);
+            newTranscriptionSemanticBlocks.add(newTranscriptionSemanticBlock);
         }
+        semanticBlockRepository.saveAll(newTranscriptionSemanticBlocks);
+
+        newTranscription.setStatus(oldTranscription.getStatus());
+        newTranscription.setUpdatedAt(LocalDateTime.now());
+        transcriptionRepository.save(newTranscription);
     }
 
     @Transactional(readOnly = true)

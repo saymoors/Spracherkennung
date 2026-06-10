@@ -406,12 +406,14 @@ async function recognizeAgainFile() {
 async function submitAudioFile({ endpoint, loadingText, successText, fallbackError }) {
     const fileInput = document.getElementById('fileInput');
     const file = fileInput.files[0];
+    const languageSelect = document.getElementById('languageSelect');
     const uploadBtn = document.getElementById('uploadBtn');
     const recognizeAgainBtn = document.getElementById('recognizeAgainBtn');
     const uploadStatus = document.getElementById('uploadStatus');
 
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('language', languageSelect.value);
 
     uploadBtn.disabled = true;
     if (recognizeAgainBtn) {
@@ -566,7 +568,7 @@ function renderModal(data, id) {
                     ` : ''}
                     ${data.characterCount ? `
                         <div class="stat-item">
-                            <span class="stat-label">Символов с пробелами</span>
+                            <span class="stat-label">Символов без пробелов</span>
                             <span class="stat-value">${data.characterCount.toLocaleString()}</span>
                         </div>
                     ` : ''}

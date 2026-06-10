@@ -254,6 +254,28 @@ body {
     display: none;
 }
 
+.language-select {
+    flex: 0 0 150px;
+    padding: 14px 18px;
+    padding-right: 38px;
+    background: #ffffff;
+    color: #1a1a1a;
+    border: 2px solid #1a1a1a;
+    border-radius: 48px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: center;
+    text-align-last: center;
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, #1a1a1a 50%),
+            linear-gradient(135deg, #1a1a1a 50%, transparent 50%);
+    background-position: calc(100% - 24px) 50%, calc(100% - 18px) 50%;
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+}
+
 .file-label {
     display: block;
     padding: 14px 24px;
@@ -664,7 +686,7 @@ body {
         gap: 12px;
     }
 
-    .file-input-wrapper, .upload-card button {
+    .language-select, .file-input-wrapper, .upload-card button {
         width: 100%;
     }
 
