@@ -1,11 +1,12 @@
 package mephi.service;
 
-import mephi.audio.RecognitionLanguage;
 import mephi.dto.*;
 import mephi.entity.AudioFile;
 import mephi.entity.ExternalCallLog;
 import mephi.entity.SemanticBlock;
 import mephi.entity.Transcription;
+import mephi.enums.TranscriptionLanguage;
+import mephi.enums.TranscriptionStatus;
 import mephi.repository.*;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -46,13 +47,13 @@ public class TranscriptionService {
     }
 
     public void recognize(Integer userId, MultipartFile file, String language) throws Exception {
-        String recognitionLanguage = getRecognitionLanguage(language);
+        String transcriptionLanguage = getTranscriptionLanguage(language);
         AudioFile audioFile = audioFileService.getFileForRecognition(userId, file, false);
         List<AudioFile> sameHashAudioFiles = audioFileRepository
                 .findByUserIdAndFileHashOrderByUploadAtDesc(userId, audioFile.getFileHash());
-        Transcription reusableTranscription = findReusableTranscription(sameHashAudioFiles, recognitionLanguage);
+        Transcription reusableTranscription = findReusableTranscription(sameHashAudioFiles, transcriptionLanguage);
 
-        Transcription newTranscription = createNewTranscription(audioFile, recognitionLanguage);
+        Transcription newTranscription = createNewTranscription(audioFile, transcriptionLanguage);
 
         if (hasSemanticBlocks(reusableTranscription)) {
             copyCompletedResult(reusableTranscription, newTranscription);
@@ -68,23 +69,19 @@ public class TranscriptionService {
     }
 
     public void recognizeAgain(Integer userId, MultipartFile file, String language) throws Exception {
-        String recognitionLanguage = getRecognitionLanguage(language);
+        String transcriptionLanguage = getTranscriptionLanguage(language);
         AudioFile audioFile = audioFileService.getFileForRecognition(userId, file, true);
 
-        Transcription newTranscription = createNewTranscription(audioFile, recognitionLanguage);
+        Transcription newTranscription = createNewTranscription(audioFile, transcriptionLanguage);
         saluteSpeechService.startRecognition(newTranscription.getId());
     }
 
-    private String getRecognitionLanguage(String language) throws Exception {
-        String recognitionLanguage = language == null ? "" : language.trim();
-        if (RecognitionLanguage.isSupported(recognitionLanguage)) {
-            return recognitionLanguage;
-        }
-
-        throw new Exception("Неподдерживаемый язык распознавания");
+    private String getTranscriptionLanguage(String language) throws Exception {
+        String transcriptionLanguage = language == null ? "" : language.trim();
+        return TranscriptionLanguage.fromCode(transcriptionLanguage).getCode();
     }
 
-    private Transcription findReusableTranscription(List<AudioFile> sameHashAudioFiles, String recognitionLanguage) {
+    private Transcription findReusableTranscription(List<AudioFile> sameHashAudioFiles, String transcriptionLanguage) {
         Transcription reusableResponseFileTranscription = null;
 
         for (AudioFile sameHashAudioFile : sameHashAudioFiles) {
@@ -92,7 +89,7 @@ public class TranscriptionService {
                     .findByAudioFileIdOrderByCreatedAtDesc(sameHashAudioFile.getId());
 
             for (Transcription sameHashAudioFileTranscription : sameHashAudioFileTranscriptions) {
-                if (!recognitionLanguage.equals(sameHashAudioFileTranscription.getLanguage())) {
+                if (!transcriptionLanguage.equals(sameHashAudioFileTranscription.getLanguage())) {
                     continue;
                 }
                 if (hasSemanticBlocks(sameHashAudioFileTranscription)) {
@@ -107,11 +104,11 @@ public class TranscriptionService {
         return reusableResponseFileTranscription;
     }
 
-    private Transcription createNewTranscription(AudioFile audioFile, String recognitionLanguage) {
+    private Transcription createNewTranscription(AudioFile audioFile, String transcriptionLanguage) {
         Transcription transcription = new Transcription();
         transcription.setAudioFileId(audioFile.getId());
-        transcription.setLanguage(recognitionLanguage);
-        transcription.setStatus("NEW");
+        transcription.setLanguage(transcriptionLanguage);
+        transcription.setStatus(TranscriptionStatus.NEW);
         transcription.setCreatedAt(LocalDateTime.now());
         transcription.setUpdatedAt(LocalDateTime.now());
         return transcriptionRepository.save(transcription);
@@ -119,7 +116,7 @@ public class TranscriptionService {
 
     private boolean hasSemanticBlocks(Transcription transcription) {
         return transcription != null
-                && "DONE".equals(transcription.getStatus())
+                && TranscriptionStatus.DONE.equals(transcription.getStatus())
                 && !semanticBlockRepository.findByTranscriptionIdOrderByOrderIndexAsc(transcription.getId()).isEmpty();
     }
 
@@ -183,13 +180,13 @@ public class TranscriptionService {
         TranscriptionHistoryItem item = new TranscriptionHistoryItem();
         item.setId(transcription.getId());
         item.setLanguage(transcription.getLanguage());
-        item.setStatus(transcription.getStatus());
+        item.setStatus(transcription.getStatus().name());
         item.setUploadedAt(transcription.getCreatedAt());
 
         AudioFile audioFile = transcription.getAudioFile();
         if (audioFile != null) {
             item.setFileName(audioFile.getName());
-            item.setFormat(audioFile.getFormat());
+            item.setFormat(audioFile.getFormat().getExtension());
             item.setSizeBytes(audioFile.getSizeBytes());
         }
 
@@ -210,12 +207,12 @@ public class TranscriptionService {
 
         TranscriptionDetails details = new TranscriptionDetails();
 
-        if ("ERROR".equals(transcription.getStatus())) {
-            details.setErrorMessage(getLastErrorMessage(transcriptionId));
+        if (TranscriptionStatus.ERROR.equals(transcription.getStatus()) || TranscriptionStatus.CANCELED.equals(transcription.getStatus())) {
+            details.setErrorMessage(getLastMessage(transcriptionId));
             return details;
         }
 
-        if (!"DONE".equals(transcription.getStatus())) {
+        if (!TranscriptionStatus.DONE.equals(transcription.getStatus())) {
             throw new Exception("Распознавание еще не завершено");
         }
 
@@ -227,7 +224,7 @@ public class TranscriptionService {
         return details;
     }
 
-    private String getLastErrorMessage(Integer transcriptionId) {
+    private String getLastMessage(Integer transcriptionId) {
         ExternalCallLog externalCallLog = externalCallLogRepository
                 .findTopByTranscriptionIdOrderByCreatedAtDesc(transcriptionId)
                 .orElse(null);
@@ -236,7 +233,7 @@ public class TranscriptionService {
             return externalCallLog.getMessage();
         }
 
-        return "Ошибка при обработке файла";
+        return "Не удалось получить результат распознавания";
     }
 
     private List<SemanticBlockDto> getSemanticBlockDtos(Integer transcriptionId) {

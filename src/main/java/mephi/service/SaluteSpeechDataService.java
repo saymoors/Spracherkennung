@@ -3,6 +3,8 @@ package mephi.service;
 import mephi.entity.AudioFile;
 import mephi.entity.SemanticBlock;
 import mephi.entity.Transcription;
+import mephi.enums.AudioFormat;
+import mephi.enums.TranscriptionStatus;
 import mephi.repository.AudioFileRepository;
 import mephi.repository.SemanticBlockRepository;
 import mephi.repository.TranscriptionRepository;
@@ -42,7 +44,7 @@ public class SaluteSpeechDataService {
     public void saveSberTaskId(Integer transcriptionId, String sberTaskId) throws Exception {
         Transcription transcription = getTranscription(transcriptionId);
         transcription.setSberTaskId(sberTaskId);
-        transcription.setStatus("RUNNING");
+        transcription.setStatus(TranscriptionStatus.RUNNING);
         transcription.setUpdatedAt(LocalDateTime.now());
         transcriptionRepository.save(transcription);
     }
@@ -72,7 +74,7 @@ public class SaluteSpeechDataService {
         List<SemanticBlock> semanticBlocks = createSemanticBlocks(transcriptionId, sberRecognitionResult.textBlocks());
 
         semanticBlockRepository.saveAll(semanticBlocks);
-        transcription.setStatus("DONE");
+        transcription.setStatus(TranscriptionStatus.DONE);
         transcription.setDurationSeconds(sberRecognitionResult.durationSeconds());
         transcription.setCharacterCount(sberRecognitionResult.characterCount());
         transcription.setSentenceCount(sberRecognitionResult.sentenceCount());
@@ -84,21 +86,21 @@ public class SaluteSpeechDataService {
         return getTranscription(transcriptionId).getLanguage();
     }
 
-    public String getAudioFormat(Integer transcriptionId) throws Exception {
+    public AudioFormat getAudioFormat(Integer transcriptionId) throws Exception {
         Transcription transcription = getTranscription(transcriptionId);
         AudioFile audioFile = getAudioFile(transcription.getAudioFileId());
         return audioFile.getFormat();
     }
 
     public void markAsError(Integer transcriptionId) {
-        markAsStatus(transcriptionId, "ERROR");
+        markAsStatus(transcriptionId, TranscriptionStatus.ERROR);
     }
 
     public void markAsCanceled(Integer transcriptionId) {
-        markAsStatus(transcriptionId, "CANCELED");
+        markAsStatus(transcriptionId, TranscriptionStatus.CANCELED);
     }
 
-    private void markAsStatus(Integer transcriptionId, String status) {
+    private void markAsStatus(Integer transcriptionId, TranscriptionStatus status) {
         Transcription transcription = transcriptionRepository.findById(transcriptionId).orElse(null);
         if (transcription != null) {
             transcription.setStatus(status);

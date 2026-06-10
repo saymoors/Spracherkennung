@@ -2,6 +2,8 @@ package mephi.service;
 
 import mephi.entity.AudioFile;
 import mephi.entity.Transcription;
+import mephi.enums.AudioFormat;
+import mephi.enums.TranscriptionStatus;
 import mephi.salutespeech.client.SberAuthClient;
 import mephi.salutespeech.client.SberFileClient;
 import mephi.salutespeech.client.SberTaskClient;
@@ -76,7 +78,7 @@ public class SaluteSpeechService {
     public void pollSberTask(Integer transcriptionId) {
         try {
             Transcription transcription = saluteSpeechDataService.getTranscription(transcriptionId);
-            if (!"RUNNING".equals(transcription.getStatus())) {
+            if (!TranscriptionStatus.RUNNING.equals(transcription.getStatus())) {
                 return;
             }
 
@@ -92,12 +94,12 @@ public class SaluteSpeechService {
             );
 
             switch (pollResponse.status()) {
-                case "DONE" -> {
+                case DONE -> {
                     saluteSpeechDataService.saveSberResponseFileId(transcriptionId, pollResponse.responseFileId());
                     downloadAndSaveResult(transcriptionId, pollResponse.responseFileId(), token);
                 }
-                case "ERROR" -> saluteSpeechDataService.markAsError(transcriptionId);
-                case "CANCELED" -> saluteSpeechDataService.markAsCanceled(transcriptionId);
+                case ERROR -> saluteSpeechDataService.markAsError(transcriptionId);
+                case CANCELED -> saluteSpeechDataService.markAsCanceled(transcriptionId);
             }
         } catch (Exception exception) {
             externalCallLogService.save(
@@ -183,7 +185,7 @@ public class SaluteSpeechService {
 
     private SberCreateTaskResponse createSberTask(Integer transcriptionId, String token, UUID sberRequestFileId) throws Exception {
         String audioLanguage = saluteSpeechDataService.getAudioLanguage(transcriptionId);
-        String audioFormat = saluteSpeechDataService.getAudioFormat(transcriptionId);
+        AudioFormat audioFormat = saluteSpeechDataService.getAudioFormat(transcriptionId);
         SberCreateTaskResponse createTaskResponse = sberTaskClient.createTask(sberRequestFileId, audioLanguage, audioFormat, token);
 
         externalCallLogService.save(

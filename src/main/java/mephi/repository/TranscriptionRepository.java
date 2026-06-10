@@ -1,6 +1,7 @@
 package mephi.repository;
 
 import mephi.entity.Transcription;
+import mephi.enums.TranscriptionStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,7 +13,7 @@ import java.util.List;
 public interface TranscriptionRepository extends JpaRepository<Transcription, Integer> {
     List<Transcription> findByAudioFileIdOrderByCreatedAtDesc(Integer audioFileId);
 
-    List<Transcription> findByStatus(String status);
+    List<Transcription> findByStatus(TranscriptionStatus status);
 
     Slice<Transcription> findByAudioFileUserIdOrderByCreatedAtDesc(Integer userId, Pageable pageable);
 }

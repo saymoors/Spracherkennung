@@ -3,7 +3,8 @@ package mephi.salutespeech.client;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import mephi.audio.AudioFormat;
+import mephi.enums.AudioFormat;
+import mephi.enums.TranscriptionStatus;
 import mephi.salutespeech.model.SberCreateTaskResponse;
 import mephi.salutespeech.model.SberPollTaskResponse;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,7 +26,7 @@ public class SberTaskClient {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public SberCreateTaskResponse createTask(UUID requestFileId, String audioLanguage, String audioFormat, String token) throws Exception {
+    public SberCreateTaskResponse createTask(UUID requestFileId, String audioLanguage, AudioFormat audioFormat, String token) throws Exception {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", "Bearer " + token);
@@ -35,7 +36,7 @@ public class SberTaskClient {
         ObjectNode options = body.putObject("options");
         options.put("model", "general");
         options.put("language", audioLanguage);
-        options.put("audio_encoding", AudioFormat.fromExtension(audioFormat).getSberAudioEncoding());
+        options.put("audio_encoding", audioFormat.getSberAudioEncoding());
         body.put("request_file_id", requestFileId.toString());
 
         HttpEntity<String> entity = new HttpEntity<>(objectMapper.writeValueAsString(body), headers);
@@ -58,10 +59,10 @@ public class SberTaskClient {
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
         JsonNode json = objectMapper.readTree(response.getBody());
         JsonNode result = json.get("result");
-        String status = result.get("status").asText();
+        TranscriptionStatus status = TranscriptionStatus.valueOf(result.get("status").asText());
         UUID responseFileId = null;
 
-        if ("DONE".equals(status)) {
+        if (TranscriptionStatus.DONE.equals(status)) {
             responseFileId = UUID.fromString(result.get("response_file_id").asText());
         }
 

@@ -4,9 +4,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import mephi.audio.RecognitionLanguage;
 import mephi.dto.TranscriptionDetails;
 import mephi.dto.TranscriptionHistoryResponse;
+import mephi.enums.TranscriptionLanguage;
 import mephi.service.TranscriptionService;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -36,7 +36,7 @@ public class TranscriptionController {
             @ApiResponse(responseCode = "401", description = "Нет токена")
     })
     public ResponseEntity<?> recognize(@RequestParam("file") MultipartFile file,
-                                       @RequestParam(value = "language", defaultValue = RecognitionLanguage.DEFAULT_CODE) String language) {
+                                       @RequestParam(value = "language", defaultValue = TranscriptionLanguage.DEFAULT_CODE) String language) {
         try {
             Integer userId = (Integer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             transcriptionService.recognize(userId, file, language);
@@ -54,7 +54,7 @@ public class TranscriptionController {
             @ApiResponse(responseCode = "401", description = "Нет токена")
     })
     public ResponseEntity<?> recognizeAgain(@RequestParam("file") MultipartFile file,
-                                            @RequestParam(value = "language", defaultValue = RecognitionLanguage.DEFAULT_CODE) String language) {
+                                            @RequestParam(value = "language", defaultValue = TranscriptionLanguage.DEFAULT_CODE) String language) {
         try {
             Integer userId = (Integer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             transcriptionService.recognizeAgain(userId, file, language);

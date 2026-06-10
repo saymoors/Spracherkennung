@@ -1,6 +1,8 @@
 package mephi.entity;
 
 import jakarta.persistence.*;
+import mephi.enums.AudioFormat;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -21,8 +23,9 @@ public class AudioFile {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, length = 10)
-    private String format;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10, columnDefinition = "varchar(10)")
+    private AudioFormat format;
 
     @Column(name = "file_hash", nullable = false, length = 100)
     private String fileHash;
@@ -71,11 +74,11 @@ public class AudioFile {
         this.name = name;
     }
 
-    public String getFormat() {
+    public AudioFormat getFormat() {
         return format;
     }
 
-    public void setFormat(String format) {
+    public void setFormat(AudioFormat format) {
         this.format = format;
     }
 

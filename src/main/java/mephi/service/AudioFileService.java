@@ -1,5 +1,6 @@
 package mephi.service;
 
+import mephi.enums.AudioFormat;
 import mephi.entity.AudioFile;
 import mephi.repository.AudioFileRepository;
 import mephi.validation.AudioFileValidationChain;
@@ -35,7 +36,7 @@ public class AudioFileService {
     public AudioFile getFileForRecognition(Integer userId, MultipartFile file, boolean isAnewRecognition) throws Exception {
         validateFile(file);
         String originalFilename = getOriginalFileName(file);
-        String audioFormat = getAudioFormat(file);
+        AudioFormat audioFormat = getAudioFormat(file);
         String fileHash = getFileHash(file);
 
         List<AudioFile> sameHashAudioFiles = audioFileRepository.findByUserIdAndFileHashOrderByUploadAtDesc(userId, fileHash);
@@ -75,9 +76,10 @@ public class AudioFileService {
         return file.getOriginalFilename();
     }
 
-    private String getAudioFormat(MultipartFile file) {
+    private AudioFormat getAudioFormat(MultipartFile file) throws Exception {
         String originalFileName = file.getOriginalFilename();
-        return originalFileName.substring(originalFileName.lastIndexOf(".") + 1).toUpperCase();
+        String extension = originalFileName.substring(originalFileName.lastIndexOf(".") + 1).toUpperCase();
+        return AudioFormat.fromExtension(extension);
     }
 
     private String getFileHash(MultipartFile file) throws Exception {
@@ -126,7 +128,7 @@ public class AudioFileService {
     private AudioFile createAudioFile(Integer userId,
                                       String originalFilename,
                                       String systemPath,
-                                      String audioFormat,
+                                      AudioFormat audioFormat,
                                       String fileHash,
                                       long sizeBytes,
                                       UUID sberRequestFileId,

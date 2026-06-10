@@ -2,7 +2,7 @@ package mephi.salutespeech.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import mephi.audio.AudioFormat;
+import mephi.enums.AudioFormat;
 import mephi.salutespeech.model.SberDownloadResponse;
 import mephi.salutespeech.model.SberUploadFileResponse;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,9 +26,9 @@ public class SberFileClient {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public SberUploadFileResponse uploadFile(String systemPath, String audioFormat, String token) throws Exception {
+    public SberUploadFileResponse uploadFile(String systemPath, AudioFormat audioFormat, String token) throws Exception {
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(AudioFormat.fromExtension(audioFormat).getContentType()));
+        headers.setContentType(MediaType.parseMediaType(audioFormat.getContentType()));
         headers.set("Authorization", "Bearer " + token);
         headers.set("X-Request-ID", UUID.randomUUID().toString());
 

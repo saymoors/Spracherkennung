@@ -1,6 +1,8 @@
 package mephi.entity;
 
 import jakarta.persistence.*;
+import mephi.enums.TranscriptionStatus;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -31,8 +33,9 @@ public class Transcription {
     @Column(name = "sber_response_file_received_at")
     private LocalDateTime sberResponseFileReceivedAt;
 
-    @Column(nullable = false, length = 10)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10, columnDefinition = "varchar(10)")
+    private TranscriptionStatus status;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -105,11 +108,11 @@ public class Transcription {
         this.sberResponseFileReceivedAt = sberResponseFileReceivedAt;
     }
 
-    public String getStatus() {
+    public TranscriptionStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(TranscriptionStatus status) {
         this.status = status;
     }
 

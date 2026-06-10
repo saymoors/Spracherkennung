@@ -1,4 +1,4 @@
-package mephi.audio;
+package mephi.enums;
 
 public enum AudioFormat {
     MP3("MP3", "audio/mpeg", "MP3"),

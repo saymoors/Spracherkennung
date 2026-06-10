@@ -1,6 +1,7 @@
 package mephi.scheduler;
 
 import mephi.entity.Transcription;
+import mephi.enums.TranscriptionStatus;
 import mephi.repository.TranscriptionRepository;
 import mephi.service.SaluteSpeechService;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -22,7 +23,7 @@ public class TranscriptionScheduler {
 
     @Scheduled(fixedDelay = 5000)
     public void pollRunningSberTasks() {
-        List<Transcription> runningTasks = transcriptionRepository.findByStatus("RUNNING");
+        List<Transcription> runningTasks = transcriptionRepository.findByStatus(TranscriptionStatus.RUNNING);
         for (Transcription task : runningTasks) {
             saluteSpeechService.pollSberTask(task.getId());
         }

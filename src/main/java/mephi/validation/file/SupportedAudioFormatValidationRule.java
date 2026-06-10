@@ -1,6 +1,6 @@
 package mephi.validation.file;
 
-import mephi.audio.AudioFormat;
+import mephi.enums.AudioFormat;
 import mephi.validation.BaseValidationRule;
 import org.springframework.web.multipart.MultipartFile;
 
