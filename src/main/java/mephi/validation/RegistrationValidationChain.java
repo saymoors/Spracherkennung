@@ -24,9 +24,9 @@ public class RegistrationValidationChain {
                 .setNext(new EmailDomainValidationRule())
                 .setNext(new PasswordRequiredValidationRule())
                 .setNext(new PasswordWithoutWhitespaceValidationRule())
+                .setNext(new PasswordLengthValidationRule())
                 .setNext(new PasswordLetterCountValidationRule())
-                .setNext(new PasswordDigitCountValidationRule())
-                .setNext(new PasswordLengthValidationRule());
+                .setNext(new PasswordDigitCountValidationRule());
     }
 
     public void validate(String login, String email, String password) throws Exception {

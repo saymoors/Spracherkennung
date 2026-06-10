@@ -41,7 +41,7 @@ public class AuthController {
     @Operation(summary = "Вход")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "ОК"),
-            @ApiResponse(responseCode = "401", description = "Неверный email или пароль")
+            @ApiResponse(responseCode = "401", description = "Неверный логин или пароль")
     })
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {

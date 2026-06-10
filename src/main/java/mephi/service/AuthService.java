@@ -49,8 +49,8 @@ public class AuthService {
     }
 
     public LoginResponse login(LoginRequest request) throws Exception {
-        String login = request.getLogin() != null ? request.getLogin().trim() : "";
-        String password = request.getPassword() != null ? request.getPassword() : "";
+        String login = request != null && request.getLogin() != null ? request.getLogin().trim() : "";
+        String password = request != null && request.getPassword() != null ? request.getPassword() : "";
 
         if (login.isEmpty()) {
             throw new Exception("Логин не может быть пустым");
