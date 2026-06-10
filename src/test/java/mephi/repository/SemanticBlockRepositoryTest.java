@@ -3,6 +3,8 @@ package mephi.repository;
 import mephi.entity.AudioFile;
 import mephi.entity.SemanticBlock;
 import mephi.entity.Transcription;
+import mephi.enums.AudioFormat;
+import mephi.enums.TranscriptionStatus;
 import mephi.entity.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,8 +15,9 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DataJpaTest(properties = {
-        "spring.sql.init.mode=never",
-        "spring.jpa.hibernate.ddl-auto=create-drop"
+        "spring.jpa.hibernate.ddl-auto=none",
+        "spring.sql.init.mode=always",
+        "spring.sql.init.schema-locations=classpath:schema.sql"
 })
 class SemanticBlockRepositoryTest {
 
@@ -58,7 +61,7 @@ class SemanticBlockRepositoryTest {
         AudioFile audioFile = new AudioFile();
         audioFile.setUserId(userId);
         audioFile.setName("lecture.mp3");
-        audioFile.setFormat("MP3");
+        audioFile.setFormat(AudioFormat.MP3);
         audioFile.setFileHash("hash");
         audioFile.setSystemPath("uploads/lecture.mp3");
         audioFile.setSizeBytes(100L);
@@ -69,7 +72,7 @@ class SemanticBlockRepositoryTest {
         Transcription transcription = new Transcription();
         transcription.setAudioFileId(audioFileId);
         transcription.setLanguage("ru-RU");
-        transcription.setStatus("DONE");
+        transcription.setStatus(TranscriptionStatus.DONE);
         return transcriptionRepository.save(transcription);
     }
 

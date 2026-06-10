@@ -8,8 +8,9 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest(properties = {
-        "spring.sql.init.mode=never",
-        "spring.jpa.hibernate.ddl-auto=create-drop"
+        "spring.jpa.hibernate.ddl-auto=none",
+        "spring.sql.init.mode=always",
+        "spring.sql.init.schema-locations=classpath:schema.sql"
 })
 class UserRepositoryTest {
 
